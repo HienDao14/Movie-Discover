@@ -2,6 +2,7 @@ package hiendao.moviefinder.presentation.detail
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,6 +57,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,12 +72,15 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -91,7 +96,16 @@ import coil.size.Size
 import hiendao.moviefinder.R
 import hiendao.moviefinder.data.mapper.makeFullUrl
 import hiendao.moviefinder.domain.model.movie.Movie
+import hiendao.moviefinder.presentation.detail.overview.OverviewSection
+import hiendao.moviefinder.presentation.detail.recommendation.RecommendationSection
 import hiendao.moviefinder.presentation.state.MovieDetailState
+import hiendao.moviefinder.util.Constant.MaxToolbarHeight
+import hiendao.moviefinder.util.Constant.MinToolbarHeight
+import hiendao.moviefinder.util.ConvertToMillion
+import hiendao.moviefinder.util.NavRoute
+import hiendao.moviefinder.util.appBarState.CustomAppBar
+import hiendao.moviefinder.util.appBarState.ExitUntilCollapsedState
+import hiendao.moviefinder.util.appBarState.ToolbarState
 import hiendao.moviefinder.util.getAverageColor
 import hiendao.moviefinder.util.getGenresFromCode
 import hiendao.moviefinder.util.shared_components.RatingBar
@@ -100,6 +114,13 @@ import kotlinx.coroutines.launch
 import me.onebone.toolbar.CollapsingToolbarScaffold
 import me.onebone.toolbar.ScrollStrategy
 import me.onebone.toolbar.rememberCollapsingToolbarScaffoldState
+
+@Composable
+private fun rememberToolbarState(toolbarHeightRange: IntRange): ToolbarState {
+    return rememberSaveable(saver = ExitUntilCollapsedState.Saver) {
+        ExitUntilCollapsedState(toolbarHeightRange)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,12 +145,6 @@ fun MovieDetailScreen(
 
     val refreshState = rememberPullToRefreshState()
 
-
-    val defaultDominantColor = MaterialTheme.colorScheme.primaryContainer
-    var dominantColor by remember {
-        mutableStateOf(defaultDominantColor)
-    }
-
     val imageUrl = makeFullUrl(movie.backdropPath)
     val imagePainter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(context)
@@ -137,7 +152,14 @@ fun MovieDetailScreen(
             .size(Size.ORIGINAL)
             .build()
     )
-    val imageState = imagePainter.state
+
+    val toolbarHeightRange = with(LocalDensity.current) {
+        MinToolbarHeight.roundToPx()..MaxToolbarHeight.roundToPx()
+    }
+    val toolbarState = rememberToolbarState(toolbarHeightRange)
+    val scrollState = rememberScrollState()
+
+    toolbarState.scrollValue = scrollState.value
 
     Box(
         modifier = Modifier
@@ -147,10 +169,38 @@ fun MovieDetailScreen(
                     refresh()
                 }
             )
-
     ) {
-        MovieDetailSection(movie = movie, modifier = modifier.fillMaxSize())
+        CustomAppBar(
+            imagePainter = imagePainter,
+            progress = toolbarState.progress,
+            title = movie.title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(with(LocalDensity.current) { toolbarState.height.toDp() })
+                .graphicsLayer { translationY = toolbarState.offset },
+            limit = toolbarState.progress != 0f
+        )
 
+        MovieDetailSection(
+            movie = movie,
+            modifier = modifier.fillMaxSize(),
+            scrollState = scrollState,
+            detailState = detailState,
+            movieItemClick = {movieId ->
+                navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movieId}")
+            }
+        )
+
+        CustomAppBar(
+            imagePainter = imagePainter,
+            progress = toolbarState.progress,
+            title = movie.title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(with(LocalDensity.current) { toolbarState.height.toDp() })
+                .graphicsLayer { translationY = toolbarState.offset },
+            limit = toolbarState.progress == 0f
+        )
     }
 }
 
@@ -158,7 +208,10 @@ fun MovieDetailScreen(
 @Composable
 fun MovieDetailSection(
     modifier: Modifier = Modifier,
-    movie: Movie
+    movie: Movie,
+    scrollState: ScrollState,
+    detailState: MovieDetailState,
+    movieItemClick: (Int) -> Unit
 ) {
 
     val pagerState = rememberPagerState(
@@ -170,9 +223,6 @@ fun MovieDetailSection(
         mutableIntStateOf(0)
     }
     val coroutineScope = rememberCoroutineScope()
-
-    val scrollState = rememberScrollState()
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -181,10 +231,6 @@ fun MovieDetailSection(
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-            VideoTrailerSection(
-                modifier = Modifier.fillMaxWidth(),
-                imageUrl = makeFullUrl(movie.backdropPath)
-            )
 
             Row(
                 modifier = Modifier
@@ -247,12 +293,19 @@ fun MovieDetailSection(
             when (page) {
                 0 -> {
                     Column {
-                        OverviewSection(movie = movie)
+                        OverviewSection(movie = movie, modifier = Modifier.fillMaxWidth())
                     }
                 }
 
                 1 -> {
-
+                    RecommendationSection(
+                        movie = movie,
+                        collections = detailState.collectionVideos,
+                        similar = detailState.similarVideos,
+                        navigate = {
+                            movieItemClick(it)
+                        }
+                    )
                 }
 
                 2 -> {}
@@ -299,74 +352,13 @@ fun PreviewDetailScreen() {
         mutableStateOf(false)
     }
 
-    MovieDetailSection(modifier = Modifier.fillMaxSize(), movie = movie)
-}
-
-@Composable
-fun OverviewSection(
-    modifier: Modifier = Modifier,
-    movie: Movie
-) {
-    var overviewExpanded by remember {
-        mutableStateOf(false)
-    }
-
-    Column(
-        modifier = modifier.padding(top = 8.dp)
-    ) {
-
-        /*
-        * releaseDate = "2024-05-22",
-        * voteAverage = 7.712,
-        voteCount = 1605,
-        *  budget = 200000000, revenue = 1014, runtime = 97,
-        status = "Released",
-        * productionCompany = listOf("Walt Disney Pictures", "Pixar"),*/
-
-
-
-        if (movie.tagline != "") {
-            Text(
-                text = "\"${movie.tagline}\"",
-                fontWeight = FontWeight.Normal,
-                fontSize = 16.sp,
-                fontStyle = FontStyle.Italic,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.CenterHorizontally)
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
-        Text(text = "Overview", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        if (overviewExpanded) {
-            Text(
-                text = movie.overview,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                modifier = Modifier.clickable {
-                    overviewExpanded = false
-                }
-            )
-
-        } else {
-
-            Text(
-                text = movie.overview,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable {
-                    overviewExpanded = true
-                }
-            )
-        }
-    }
+    MovieDetailSection(
+        modifier = Modifier.fillMaxSize(),
+        movie = movie,
+        scrollState = rememberScrollState(),
+        detailState = MovieDetailState(),
+        movieItemClick = {}
+    )
 }
 
 @Composable
@@ -387,7 +379,7 @@ fun ImageSection(
 
     Card(
         modifier = modifier
-            .size(width = 140.dp, height = 250.dp),
+            .size(width = 120.dp, height = 220.dp),
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(5.dp)
     ) {
@@ -431,77 +423,68 @@ fun ImageSection(
         }
     }
 }
-
-@Composable
-fun VideoTrailerSection(
-    modifier: Modifier = Modifier,
-    imageUrl: String
-) {
-    val context = LocalContext.current
-
-    val imagePainter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(context)
-            .data(imageUrl)
-            .size(Size.ORIGINAL)
-            .build()
-    )
-
-    val imageState = imagePainter.state
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        when (imageState) {
-            is AsyncImagePainter.State.Success -> {
-                Image(
-                    bitmap = imageState.result.drawable.toBitmap().asImageBitmap(),
-                    contentDescription = "Trailer Video",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
-                        .drawWithContent {
-                            val colors = listOf(
-                                Color.Black,
-                                Color.Transparent
-                            )
-                            drawContent()
-                            drawRect(
-                                brush = Brush.verticalGradient(colors),
-                                blendMode = BlendMode.DstIn
-                            )
-                        }
-                )
-            }
-
-            is AsyncImagePainter.State.Loading -> {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(150.dp)
-                        .align(Alignment.Center)
-                        .scale(0.5f)
-                )
-            }
-
-            else -> {
-                Icon(
-                    imageVector = Icons.Default.BrokenImage,
-                    contentDescription = "No image",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(32.dp),
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-            }
-        }
-    }
-}
+//
+//@Composable
+//fun VideoTrailerSection(
+//    modifier: Modifier = Modifier,
+//    imagePainter: AsyncImagePainter
+//) {
+//    val imageState = imagePainter.state
+//
+//    Box(
+//        modifier = modifier
+//            .fillMaxWidth()
+//            .height(200.dp),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        when (imageState) {
+//            is AsyncImagePainter.State.Success -> {
+//                Image(
+//                    bitmap = imageState.result.drawable.toBitmap().asImageBitmap(),
+//                    contentDescription = "Trailer Video",
+//                    contentScale = ContentScale.Crop,
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+//                        .drawWithContent {
+//                            val colors = listOf(
+//                                Color.Black,
+//                                Color.Transparent
+//                            )
+//                            drawContent()
+//                            drawRect(
+//                                brush = Brush.verticalGradient(colors),
+//                                blendMode = BlendMode.DstIn
+//                            )
+//                        }
+//                )
+//            }
+//
+//            is AsyncImagePainter.State.Loading -> {
+//                CircularProgressIndicator(
+//                    color = MaterialTheme.colorScheme.primary,
+//                    modifier = Modifier
+//                        .size(150.dp)
+//                        .align(Alignment.Center)
+//                        .scale(0.5f)
+//                )
+//            }
+//
+//            else -> {
+//                Icon(
+//                    imageVector = Icons.Default.BrokenImage,
+//                    contentDescription = "No image",
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .clip(RoundedCornerShape(10.dp))
+//                        .background(MaterialTheme.colorScheme.background)
+//                        .padding(32.dp),
+//                    tint = MaterialTheme.colorScheme.onBackground
+//                )
+//            }
+//        }
+//    }
+//}
 
 @Composable
 fun MovieInfoSection(
@@ -516,26 +499,12 @@ fun MovieInfoSection(
     Column(
         modifier = modifier
     ) {
-        Text(text = movie.title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(5.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RatingBar(
-                starsModifier = Modifier.size(14.dp),
-                rating = movie.voteAverage / 2
-            )
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(
-                text = movie.voteAverage.toString().take(3),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
-
+        Text(text = movie.title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(5.dp))
 
         Text(
             text = if (movie.adult) "+18" else "-13",
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             modifier = Modifier
                 .border(1.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(6.dp))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
@@ -545,7 +514,7 @@ fun MovieInfoSection(
 
         Text(
             text = genres,
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Normal
         )
 
@@ -553,8 +522,23 @@ fun MovieInfoSection(
 
         Text(
             text = runtimeText,
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Normal
         )
+
+        Spacer(modifier = Modifier.height(5.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RatingBar(
+                starsModifier = Modifier.size(12.dp),
+                rating = movie.voteAverage / 2
+            )
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(
+                text = movie.voteAverage.toString().take(3),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
     }
 }

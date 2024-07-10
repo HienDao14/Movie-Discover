@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -17,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -35,6 +38,7 @@ import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
+import kotlinx.coroutines.delay
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -69,6 +73,7 @@ fun Navigation(
     val viewModel = hiltViewModel<MovieViewModel>()
 
     val detailViewModel = hiltViewModel<MovieDetailViewModel>()
+
     val detailState = detailViewModel.movieDetailState.collectAsState().value
 
     NavHost(navController = navController, startDestination = NavRoute.HOME_SCREEN.name) {
@@ -115,7 +120,10 @@ fun Navigation(
             requireNotNull(movieId)
 
             LaunchedEffect(key1 = true) {
+                detailViewModel.reload()
+                println("Reload viewModel with: $movieId")
                 detailViewModel.load(movieId.toInt())
+                delay(500)
             }
 
             if(detailState.movie != null){
@@ -124,7 +132,19 @@ fun Navigation(
                     detailState = detailState,
                     navHostController = navController
                 )
-            } else {
+            } else if(detailState.isLoading){
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ){
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
+            }
+            else if(detailState.errorMsg != "") {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

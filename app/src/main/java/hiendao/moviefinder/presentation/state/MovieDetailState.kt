@@ -8,6 +8,7 @@ data class MovieDetailState(
 
     val errorMsg: String = "",
 
+    val movieId: Int? = null,
     val collectionId: Int? = null,
 
     val movie: Movie? = null,

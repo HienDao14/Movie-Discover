@@ -62,7 +62,7 @@ fun MovieDTO.toMovieEntity(category: Category, index: Int): MovieEntity {
         category = category.name,
         categoryIndex = index,
         videos = "",
-        collectionId = 0
+        collectionId = -1
     )
 }
 
@@ -111,7 +111,7 @@ fun MovieDetailDTO.toMovieEntity(): MovieEntity {
         id = id,
         adult = adult,
         backdropPath = backdrop_path ?: "",
-        genreIds = genres.joinToString(","),
+        genreIds = genres.joinToString(",") { it.id.toString() },
         originalLanguage = original_language,
         originalTitle = original_title,
         overview = overview,
@@ -139,7 +139,7 @@ fun MovieDetailDTO.toMovieEntity(): MovieEntity {
     )
 }
 
-fun MovieDetailDTO.toMovie(): Movie{
+fun MovieDetailDTO.toMovie(): Movie {
     return Movie(
         id = id,
         adult = adult,
@@ -161,7 +161,7 @@ fun MovieDetailDTO.toMovie(): Movie{
         runtime = runtime,
         status = status,
         tagline = tagline,
-        productionCompany = production_companies.map{ it.name },
+        productionCompany = production_companies.map { it.name },
         originCountry = origin_country,
         similar = similar?.results?.map { it.id } ?: emptyList(),
         images = images?.posters?.map { it.file_path } ?: emptyList(),
@@ -170,7 +170,7 @@ fun MovieDetailDTO.toMovie(): Movie{
     )
 }
 
-fun MovieDTO.toMovie(): Movie{
+fun MovieDTO.toMovie(): Movie {
     return Movie(
         id = id,
         adult = adult,
@@ -197,21 +197,21 @@ fun MovieDTO.toMovie(): Movie{
         similar = emptyList(),
         images = emptyList(),
         videos = emptyList(),
-        collectionId = 0
+        collectionId = -1
     )
 }
 
-fun PartCollection.toMovieEntity(): MovieEntity{
+fun PartCollection.toMovieEntity(): MovieEntity {
     return MovieEntity(
         id = id,
         adult = adult,
-        backdropPath = backdrop_path,
+        backdropPath = backdrop_path ?: "",
         genreIds = genre_ids.joinToString(","),
         originalLanguage = original_language,
         originalTitle = original_title,
         overview = overview,
         popularity = popularity,
-        posterPath = poster_path,
+        posterPath = poster_path ?: "",
         releaseDate = release_date,
         title = title,
         video = video,
@@ -230,21 +230,22 @@ fun PartCollection.toMovieEntity(): MovieEntity{
         category = Category.MOVIE.name,
         categoryIndex = 0,
         videos = "",
-        collectionId = 0
+        collectionId = -1,
+        mediaType = media_type
     )
 }
 
-fun PartCollection.toMovie(): Movie{
+fun PartCollection.toMovie(): Movie {
     return Movie(
         id = id,
         adult = adult,
-        backdropPath = backdrop_path,
+        backdropPath = backdrop_path ?: "",
         genreIds = genre_ids,
         originalLanguage = original_language,
         originalTitle = original_title,
         overview = overview,
         popularity = popularity,
-        posterPath = poster_path,
+        posterPath = poster_path ?: "",
         releaseDate = release_date,
         title = title,
         video = video,
@@ -261,6 +262,7 @@ fun PartCollection.toMovie(): Movie{
         similar = emptyList(),
         images = emptyList(),
         videos = emptyList(),
-        collectionId = 0
+        collectionId = -1,
+        mediaType = media_type
     )
 }

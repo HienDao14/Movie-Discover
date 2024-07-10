@@ -23,17 +23,29 @@ class MovieDetailViewModel @Inject constructor(
     private val _movieDetailState = MutableStateFlow(MovieDetailState())
     val movieDetailState = _movieDetailState.asStateFlow()
 
-
-
-    fun load(movieId: Int){
-        getMovieDetailInfo(movieId){
-
-            getSimilarVideos(movieId)
-            getCollectionVideos(_movieDetailState.value.collectionId)
+    fun reload(){
+        _movieDetailState.update {
+            it.copy(
+                isLoading = false,
+                errorMsg = "",
+                movieId = null,
+                collectionId = null,
+                movie = null,
+                listSimilar = emptyList(),
+                similarVideos = emptyList(),
+                collectionVideos = emptyList()
+            )
         }
     }
+    fun load(movieId: Int){
+        println("Similar videos: ${_movieDetailState.value.similarVideos}")
+        getMovieDetailInfo(movieId){
+            getCollectionVideos(_movieDetailState.value.collectionId)
+        }
+        getSimilarVideos(movieId)
+    }
 
-    private fun getMovieDetailInfo(movieId: Int, onFinished: () -> Unit){
+    private fun getMovieDetailInfo(movieId: Int, onFinish: () -> Unit){
         viewModelScope.launch {
             withContext(Dispatchers.IO){
                 movieRepository.getMovieDetail(movieId).collect{result ->
@@ -57,14 +69,15 @@ class MovieDetailViewModel @Inject constructor(
                                 _movieDetailState.update {
                                     it.copy(
                                         movie = movie,
-                                        listSimilar = movie.similar
+                                        movieId = movie.id,
+                                        collectionId = movie.collectionId
                                     )
                                 }
                             }
                         }
                     }
                 }
-                onFinished()
+                onFinish()
             }
         }
     }
@@ -72,6 +85,7 @@ class MovieDetailViewModel @Inject constructor(
     private fun getSimilarVideos(
         movieId: Int
     ){
+        println("MovieId: $movieId")
         viewModelScope.launch {
             withContext(Dispatchers.IO){
                 movieRepository.getSimilarMovies(movieId).collect{result ->
@@ -108,6 +122,14 @@ class MovieDetailViewModel @Inject constructor(
     private fun getCollectionVideos(
         collectionId: Int?
     ){
+        if(collectionId == -1){
+            _movieDetailState.update {
+                it.copy(
+                    collectionVideos = emptyList()
+                )
+            }
+            return
+        }
         collectionId?.let {
             viewModelScope.launch {
                 withContext(Dispatchers.IO){
@@ -141,5 +163,6 @@ class MovieDetailViewModel @Inject constructor(
                 }
             }
         }
+
     }
 }
