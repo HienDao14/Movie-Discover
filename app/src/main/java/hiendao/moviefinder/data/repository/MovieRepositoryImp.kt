@@ -293,7 +293,7 @@ class MovieRepositoryImp @Inject constructor(
 
             val localMovie = movieDAO.getMovieWithId(movieId)
             if(localMovie != null && localMovie.similar != ""){
-                val similarIds = localMovie.similar
+                val similarIds = localMovie.similar.split(",")
                 val similarMovies = mutableListOf<Movie>()
                 similarIds.forEach {id ->
                     val movie = movieDAO.getMovieWithId(id.toInt())

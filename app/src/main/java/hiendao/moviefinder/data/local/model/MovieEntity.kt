@@ -34,5 +34,6 @@ data class MovieEntity(
     val category: String,
     val categoryIndex : Int,
     val videos: String?,
-    val collectionId: Int
+    val collectionId: Int,
+    val mediaType : String?= null
 )

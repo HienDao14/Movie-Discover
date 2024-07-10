@@ -29,5 +29,6 @@ data class Movie(
     val similar : List<Int>,
     val images: List<String>,
     val videos: List<String>,
-    val collectionId: Int
+    val collectionId: Int,
+    val mediaType: String ?= null
 )
