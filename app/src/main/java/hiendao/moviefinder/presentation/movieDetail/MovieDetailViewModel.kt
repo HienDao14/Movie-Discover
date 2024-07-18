@@ -1,9 +1,10 @@
-package hiendao.moviefinder.presentation.detail
+package hiendao.moviefinder.presentation.movieDetail
 
-import androidx.compose.runtime.traceEventEnd
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import hiendao.moviefinder.domain.repository.CommonRepository
 import hiendao.moviefinder.domain.repository.MovieRepository
 import hiendao.moviefinder.presentation.state.MovieDetailState
 import hiendao.moviefinder.util.Resource
@@ -17,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MovieDetailViewModel @Inject constructor(
-    private val movieRepository: MovieRepository
+    private val movieRepository: MovieRepository,
+    private val commonRepository: CommonRepository
 ): ViewModel() {
 
     private val _movieDetailState = MutableStateFlow(MovieDetailState())
@@ -33,16 +35,17 @@ class MovieDetailViewModel @Inject constructor(
                 movie = null,
                 listSimilar = emptyList(),
                 similarVideos = emptyList(),
-                collectionVideos = emptyList()
+                collectionVideos = emptyList(),
+                listCredit = emptyList()
             )
         }
     }
     fun load(movieId: Int){
-        println("Similar videos: ${_movieDetailState.value.similarVideos}")
         getMovieDetailInfo(movieId){
             getCollectionVideos(_movieDetailState.value.collectionId)
         }
         getSimilarVideos(movieId)
+        getCredits(movieId)
     }
 
     private fun getMovieDetailInfo(movieId: Int, onFinish: () -> Unit){
@@ -85,7 +88,6 @@ class MovieDetailViewModel @Inject constructor(
     private fun getSimilarVideos(
         movieId: Int
     ){
-        println("MovieId: $movieId")
         viewModelScope.launch {
             withContext(Dispatchers.IO){
                 movieRepository.getSimilarMovies(movieId).collect{result ->
@@ -163,6 +165,42 @@ class MovieDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
 
+    private fun getCredits(
+        movieId: Int
+    ){
+        viewModelScope.launch {
+            withContext(Dispatchers.IO){
+                commonRepository.getCredits(movieId).collect{result ->
+                    when(result){
+                        is Resource.Success -> {
+                            result.data?.let {credits ->
+                                Log.d("credit data before update", credits.joinToString(","){it.name})
+                                _movieDetailState.update {
+                                    it.copy(
+                                        listCredit = credits
+                                    )
+                                }
+                            }
+                        }
+                        is Resource.Loading -> {
+                            _movieDetailState.update {
+                                it.copy(
+                                    isLoading = result.isLoading
+                                )
+                            }
+                        }
+                        is Resource.Error -> {
+                            _movieDetailState.update {
+                                it.copy(
+                                    errorMsg = result.message.toString()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

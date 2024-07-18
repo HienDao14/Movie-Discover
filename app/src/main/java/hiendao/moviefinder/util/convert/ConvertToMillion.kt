@@ -1,4 +1,4 @@
-package hiendao.moviefinder.util
+package hiendao.moviefinder.util.convert
 
 import java.text.DecimalFormat
 

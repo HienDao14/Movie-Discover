@@ -1,4 +1,4 @@
-package hiendao.moviefinder.presentation.detail
+package hiendao.moviefinder.presentation.movieDetail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

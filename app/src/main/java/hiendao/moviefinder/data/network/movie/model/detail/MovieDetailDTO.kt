@@ -1,5 +1,6 @@
 package hiendao.moviefinder.data.network.movie.model.detail
 
+import hiendao.moviefinder.data.network.movie.model.credit.Credits
 import hiendao.moviefinder.data.network.movie.model.video.Videos
 import hiendao.moviefinder.domain.model.Genres
 

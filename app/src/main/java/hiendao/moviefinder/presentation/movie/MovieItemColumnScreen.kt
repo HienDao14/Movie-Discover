@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
@@ -51,7 +50,7 @@ import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
 import hiendao.moviefinder.domain.model.movie.Movie
 import hiendao.moviefinder.util.getAverageColor
-import hiendao.moviefinder.util.getGenresFromCode
+import hiendao.moviefinder.util.convert.getGenresFromCode
 import kotlin.math.roundToInt
 
 @Composable

@@ -1,18 +1,14 @@
-package hiendao.moviefinder.presentation.detail
+package hiendao.moviefinder.presentation.movieDetail
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,32 +22,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.BrokenImage
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -63,57 +49,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
-import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
-import hiendao.moviefinder.R
 import hiendao.moviefinder.data.mapper.makeFullUrl
 import hiendao.moviefinder.domain.model.movie.Movie
-import hiendao.moviefinder.presentation.detail.overview.OverviewSection
-import hiendao.moviefinder.presentation.detail.recommendation.RecommendationSection
+import hiendao.moviefinder.presentation.movieDetail.credit.CreditSection
+import hiendao.moviefinder.presentation.movieDetail.overview.OverviewSection
+import hiendao.moviefinder.presentation.movieDetail.recommendation.RecommendationSection
 import hiendao.moviefinder.presentation.state.MovieDetailState
 import hiendao.moviefinder.util.Constant.MaxToolbarHeight
 import hiendao.moviefinder.util.Constant.MinToolbarHeight
-import hiendao.moviefinder.util.ConvertToMillion
 import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.appBarState.CustomAppBar
 import hiendao.moviefinder.util.appBarState.ExitUntilCollapsedState
 import hiendao.moviefinder.util.appBarState.ToolbarState
-import hiendao.moviefinder.util.getAverageColor
-import hiendao.moviefinder.util.getGenresFromCode
+import hiendao.moviefinder.util.convert.getGenresFromCode
 import hiendao.moviefinder.util.shared_components.RatingBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.onebone.toolbar.CollapsingToolbarScaffold
-import me.onebone.toolbar.ScrollStrategy
-import me.onebone.toolbar.rememberCollapsingToolbarScaffoldState
 
 @Composable
 private fun rememberToolbarState(toolbarHeightRange: IntRange): ToolbarState {
@@ -133,14 +101,14 @@ fun MovieDetailScreen(
     val context = LocalContext.current
 
     val refreshScope = rememberCoroutineScope()
-    var refreshing by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
 
     fun refresh() = refreshScope.launch {
-        refreshing = true
-        delay(1500)
+        isRefreshing = true
+        delay(3000)
         //function refresh
         Toast.makeText(context, "Refresh", Toast.LENGTH_SHORT).show()
-        refreshing = false
+        isRefreshing = false
     }
 
     val refreshState = rememberPullToRefreshState()
@@ -164,11 +132,7 @@ fun MovieDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pullToRefresh(
-                refreshing, refreshState, onRefresh = {
-                    refresh()
-                }
-            )
+            .nestedScroll(refreshState.nestedScrollConnection)
     ) {
         CustomAppBar(
             imagePainter = imagePainter,
@@ -188,6 +152,9 @@ fun MovieDetailScreen(
             detailState = detailState,
             movieItemClick = {movieId ->
                 navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movieId}")
+            },
+            creditItemClick = {creditId ->
+                navHostController.navigate("${NavRoute.CREDIT_SCREEN}?creditId=${creditId}")
             }
         )
 
@@ -201,6 +168,22 @@ fun MovieDetailScreen(
                 .graphicsLayer { translationY = toolbarState.offset },
             limit = toolbarState.progress == 0f
         )
+
+        if(refreshState.isRefreshing){
+            LaunchedEffect(true) {
+                refresh()
+            }
+        }
+        
+        LaunchedEffect(isRefreshing) {
+            if(isRefreshing){
+                refreshState.startRefresh()
+            } else {
+                refreshState.endRefresh()
+            }
+        }
+
+        PullToRefreshContainer(state = refreshState, modifier = Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -211,7 +194,8 @@ fun MovieDetailSection(
     movie: Movie,
     scrollState: ScrollState,
     detailState: MovieDetailState,
-    movieItemClick: (Int) -> Unit
+    movieItemClick: (Int) -> Unit,
+    creditItemClick: (Int) -> Unit
 ) {
 
     val pagerState = rememberPagerState(
@@ -308,8 +292,17 @@ fun MovieDetailSection(
                     )
                 }
 
-                2 -> {}
-                else -> {}
+                2 -> {
+                    CreditSection(
+                        movieId = movie.id,
+                        credits = detailState.listCredit,
+                        navigate = {
+                            creditItemClick(it)
+                        }
+                    )
+                }
+                3 -> {}
+                4 -> {}
             }
         }
 
@@ -357,7 +350,8 @@ fun PreviewDetailScreen() {
         movie = movie,
         scrollState = rememberScrollState(),
         detailState = MovieDetailState(),
-        movieItemClick = {}
+        movieItemClick = {},
+        creditItemClick = {}
     )
 }
 
