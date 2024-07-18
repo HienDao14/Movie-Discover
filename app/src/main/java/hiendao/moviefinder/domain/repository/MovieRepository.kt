@@ -2,6 +2,7 @@ package hiendao.moviefinder.domain.repository
 
 import androidx.paging.PagingData
 import hiendao.moviefinder.data.local.model.MovieEntity
+import hiendao.moviefinder.domain.model.Credit
 import hiendao.moviefinder.domain.model.movie.Movie
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,7 @@ interface MovieRepository {
 
     suspend fun getCollection(collectionId: Int): Flow<Resource<List<Movie>>>
 
+    suspend fun getMoviesWithCreditId(creditId: Int): Flow<Resource<List<Movie>>>
 }
 
 //suspend fun getPopularMovies() = movieApi.getPopularMovies(null, null)

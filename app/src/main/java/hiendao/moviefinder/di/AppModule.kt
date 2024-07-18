@@ -8,6 +8,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import hiendao.moviefinder.data.local.CreditDAO
+import hiendao.moviefinder.data.local.CreditDatabase
 import hiendao.moviefinder.data.local.MovieDAO
 import hiendao.moviefinder.data.local.MovieDatabase
 import hiendao.moviefinder.data.local.model.MovieEntity
@@ -74,9 +76,29 @@ class AppModule {
 
     @Provides
     @Singleton
+    fun provideCreditDatabase(app: Application): CreditDatabase{
+        return Room.databaseBuilder(
+            app,
+            CreditDatabase::class.java,
+            "creditdb.db"
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+    }
+
+    @Provides
+    @Singleton
     fun provideMovieDAO(
         movieDatabase: MovieDatabase
     ): MovieDAO{
         return movieDatabase.dao
+    }
+
+    @Provides
+    @Singleton
+    fun provideCreditDAO(
+        creditDatabase: CreditDatabase
+    ): CreditDAO{
+        return creditDatabase.creditDao
     }
 }

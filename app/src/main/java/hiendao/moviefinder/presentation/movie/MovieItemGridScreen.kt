@@ -49,7 +49,7 @@ import hiendao.moviefinder.data.mapper.makeFullUrl
 import hiendao.moviefinder.domain.model.movie.Movie
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.getAverageColor
-import hiendao.moviefinder.util.getGenresFromCode
+import hiendao.moviefinder.util.convert.getGenresFromCode
 import hiendao.moviefinder.util.shared_components.RatingBar
 
 @Composable

@@ -2,6 +2,9 @@ package hiendao.moviefinder.data.network.movie
 
 
 import hiendao.moviefinder.data.network.movie.model.collection.Collection
+import hiendao.moviefinder.data.network.movie.model.credit.Credits
+import hiendao.moviefinder.data.network.movie.model.credit.MovieCredits
+import hiendao.moviefinder.data.network.movie.model.credit.detail.CreditDetail
 import hiendao.moviefinder.data.network.movie.model.detail.MovieDetailDTO
 import hiendao.moviefinder.data.network.movie.model.list.MovieListResponse
 import hiendao.moviefinder.data.network.movie.model.list.MovieListWithDateResponse
@@ -50,4 +53,20 @@ interface MovieApi {
     suspend fun getMovieCollection(
         @Path("collection_id") collectionId: Int
     ): Collection
+
+    @GET("movie/{movie_id}/credits")
+    suspend fun getCredits(
+        @Path("movie_id") movieId: Int
+    ): Credits
+
+    @GET("person/{person_id}")
+    suspend fun getCreditDetail(
+        @Path("person_id") personId: Int,
+        @Query("append_to_response") append: String? = "movie_credits,external_ids"
+    ): CreditDetail
+
+    @GET("person/{person_id}/movie_credits")
+    suspend fun getMovieCredits(
+        @Path("person_id") personId: Int
+    ): MovieCredits
 }

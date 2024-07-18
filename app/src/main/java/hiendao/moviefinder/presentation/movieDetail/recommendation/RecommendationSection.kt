@@ -1,4 +1,4 @@
-package hiendao.moviefinder.presentation.detail.recommendation
+package hiendao.moviefinder.presentation.movieDetail.recommendation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

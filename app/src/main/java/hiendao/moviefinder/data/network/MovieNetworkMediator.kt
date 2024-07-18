@@ -56,7 +56,7 @@ class MovieNetworkMediator @Inject constructor(
                 }
                 val movieEntities = movies.results.map { it.toMovieEntity(category, movies.page) }
 
-                movieDatabase.dao.upsertListMovie(movieEntities)
+                movieDatabase.dao.insertListMovie(movieEntities)
             }
 
             MediatorResult.Success(

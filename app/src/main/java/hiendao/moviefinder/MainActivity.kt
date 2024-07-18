@@ -17,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,8 +30,10 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import dagger.hilt.android.AndroidEntryPoint
 import hiendao.moviefinder.presentation.MainScreen
 import hiendao.moviefinder.presentation.MovieViewModel
-import hiendao.moviefinder.presentation.detail.MovieDetailScreen
-import hiendao.moviefinder.presentation.detail.MovieDetailViewModel
+import hiendao.moviefinder.presentation.creditDetail.CreditScreen
+import hiendao.moviefinder.presentation.creditDetail.CreditViewModel
+import hiendao.moviefinder.presentation.movieDetail.MovieDetailScreen
+import hiendao.moviefinder.presentation.movieDetail.MovieDetailViewModel
 import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
 import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
@@ -71,10 +72,11 @@ fun Navigation(
     val navController = rememberNavController()
 
     val viewModel = hiltViewModel<MovieViewModel>()
-
     val detailViewModel = hiltViewModel<MovieDetailViewModel>()
+    val creditViewModel = hiltViewModel<CreditViewModel>()
 
     val detailState = detailViewModel.movieDetailState.collectAsState().value
+    val creditState = creditViewModel.creditState.collectAsState().value
 
     NavHost(navController = navController, startDestination = NavRoute.HOME_SCREEN.name) {
 
@@ -121,7 +123,6 @@ fun Navigation(
 
             LaunchedEffect(key1 = true) {
                 detailViewModel.reload()
-                println("Reload viewModel with: $movieId")
                 detailViewModel.load(movieId.toInt())
                 delay(500)
             }
@@ -159,6 +160,31 @@ fun Navigation(
                     )
                 }
             }
+        }
+
+        composable(
+            route = "${NavRoute.CREDIT_SCREEN}?creditId={creditId}",
+            arguments = listOf(
+                navArgument(name = "creditId"){
+                    type = NavType.StringType
+                }
+            )
+        ){entry ->
+            val creditId = entry.arguments?.getString("creditId")
+            requireNotNull(creditId)
+
+            LaunchedEffect(key1 = true) {
+                creditViewModel.reload()
+                println("Reload credit viewModel with: $creditId")
+                creditViewModel.load(creditId = creditId.toInt())
+                delay(500)
+            }
+
+            CreditScreen(
+                creditId = creditId.toInt(),
+                creditState = creditState,
+                onEvent = creditViewModel::onEvent
+            )
         }
     }
 }
