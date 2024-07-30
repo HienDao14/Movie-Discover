@@ -4,7 +4,6 @@ import hiendao.moviefinder.data.local.model.CreditEntity
 import hiendao.moviefinder.data.local.model.MovieEntity
 import hiendao.moviefinder.data.network.movie.model.collection.PartCollection
 import hiendao.moviefinder.data.network.movie.model.credit.Cast
-import hiendao.moviefinder.data.network.movie.model.credit.Credits
 import hiendao.moviefinder.data.network.movie.model.credit.Crew
 import hiendao.moviefinder.data.network.movie.model.credit.detail.CreditDetail
 import hiendao.moviefinder.data.network.movie.model.credit.detail.MovieCast
@@ -15,7 +14,7 @@ import hiendao.moviefinder.data.network.movie.model.list.MovieListResponse
 import hiendao.moviefinder.data.network.movie.model.list.MovieListWithDateResponse
 import hiendao.moviefinder.data.network.util.base_url.BaseUrl.BASE_IMAGE_URL
 import hiendao.moviefinder.domain.model.Credit
-import hiendao.moviefinder.domain.model.movie.Movie
+import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.util.Category
 
 fun makeFullUrl(path: String): String {
@@ -109,13 +108,13 @@ fun MovieEntity.toMovie(): Movie {
         } catch (e: Exception) {
             listOf(-1, -2)
         },
-        images = images.split(",").map { it },
+        images = images.split(";").map { it },
         videos = videos?.split(",")?.map { it } ?: emptyList(),
         collectionId = collectionId
     )
 }
 
-fun MovieDetailDTO.toMovieEntity(): MovieEntity {
+fun MovieDetailDTO.toMovieEntity(category: String, index: Int): MovieEntity {
     return MovieEntity(
         id = id,
         adult = adult,
@@ -140,9 +139,10 @@ fun MovieDetailDTO.toMovieEntity(): MovieEntity {
         productionCompany = production_companies.joinToString(",") { it.name },
         originCountry = origin_country.joinToString(","),
         similar = similar?.results?.joinToString(",") { it.id.toString() } ?: "",
-        images = images?.posters?.joinToString(",") ?: "",
-        category = Category.MOVIE.name,
-        categoryIndex = -1,
+        images = (images?.posters?.joinToString(",") { it.file_path } ?: "") + ";"
+                + (images?.backdrops?.joinToString(",") { it.file_path } ?: ""),
+        category = category,
+        categoryIndex = index,
         videos = videos.results.joinToString(",") { it.key },
         collectionId = belongs_to_collection?.id ?: -1,
         credits = ""
@@ -174,7 +174,7 @@ fun MovieDetailDTO.toMovie(): Movie {
         productionCompany = production_companies.map { it.name },
         originCountry = origin_country,
         similar = similar?.results?.map { it.id } ?: emptyList(),
-        images = images?.posters?.map { it.file_path } ?: emptyList(),
+        images = images?.posters?.map { it.file_path }?.plus(images.backdrops.map { it.file_path }) ?: emptyList(),
         videos = videos.results.map { it.key },
         collectionId = belongs_to_collection?.id ?: -1
     )
@@ -388,7 +388,7 @@ fun MovieCast.toMovieEntity(category: Category, index: Int): MovieEntity {
     )
 }
 
-fun MovieCrew.toMovieEntity(category: Category, index: Int): MovieEntity{
+fun MovieCrew.toMovieEntity(category: Category, index: Int): MovieEntity {
     return MovieEntity(
         id = id,
         adult = adult ?: false,
@@ -439,8 +439,7 @@ fun CreditDetail.toCreditEntity(type: String): CreditEntity {
         movieId = if (type == "Cast") {
             movie_credits?.cast?.filter { it?.character != null }
                 ?.joinToString(",") { it?.id.toString() } ?: ""
-        }
-        else {
+        } else {
             movie_credits?.crew?.filter { it?.job == "Director" }
                 ?.joinToString(",") { it?.id.toString() } ?: ""
         },
@@ -452,7 +451,6 @@ fun CreditDetail.toCreditEntity(type: String): CreditEntity {
         externalIds = if (external_ids != null) (external_ids.facebook_id.toString() + "," + external_ids.twitter_id.toString() + "," + external_ids.instagram_id.toString()) else ""
     )
 }
-// Movie -> Check xem DAO co tt th credit chua -> Chua thi upsert -> Neu co thi find trong movieId lay index -> get Character tu index
 
 fun CreditDetail.toCredit(type: String): Credit {
     return Credit(

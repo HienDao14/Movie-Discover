@@ -69,4 +69,13 @@ interface MovieApi {
     suspend fun getMovieCredits(
         @Path("person_id") personId: Int
     ): MovieCredits
+
+    @GET("discover/movie")
+    suspend fun getMovieDiscover(
+        @Query("release_date.lte") releaseDateLte: String,
+        @Query("page") page: Int = 1,
+        @Query("with_genres") withGenres: String?,
+        @Query("sort_by") sortBy: String,
+        @Query("vote_count.gte") voteCountGte: Float?
+    ): MovieListResponse
 }

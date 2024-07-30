@@ -41,27 +41,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.lerp
 import androidx.core.graphics.drawable.toBitmap
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
-import hiendao.moviefinder.domain.model.movie.Movie
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import hiendao.moviefinder.domain.model.Movie
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlin.math.absoluteValue
 
 @Composable
 fun AutoSwipePager(
@@ -83,6 +76,8 @@ fun AutoSwipePager(
 
     val context = LocalContext.current
 
+    val scope = rememberCoroutineScope()
+
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -91,7 +86,10 @@ fun AutoSwipePager(
             modifier = Modifier.fillMaxWidth(),
             state = pagerState,
             flingBehavior = fling,
-            contentPadding = PaddingValues(horizontal = 32.dp)
+            key = {
+                movies[it].id
+            },
+            pageSize = PageSize.Fill
         ) { index ->
             val movie = movies[index]
             val imagePainter = rememberAsyncImagePainter(
@@ -182,15 +180,27 @@ fun AutoSwipePager(
             LaunchedEffect(true) {
                 while(true){
                     delay(3000)
-                    with(pagerState) {
-                        pagerState.animateScrollToPage(
-                            page = (currentPage + 1) % movies.size,
-                            animationSpec = tween(
-                                durationMillis = 500,
-                                easing = FastOutSlowInEasing
+                    scope.launch {
+
+                        if (pagerState.canScrollForward) {
+                            pagerState.animateScrollToPage(
+                                pagerState.currentPage + 1
                             )
-                        )
+                        } else {
+                            pagerState.animateScrollToPage(
+                                0
+                            )
+                        }
                     }
+//                    with(pagerState) {
+//                        pagerState.animateScrollToPage(
+//                            page = (currentPage + 1) % movies.size,
+//                            animationSpec = tween(
+//                                durationMillis = 500,
+//                                easing = FastOutSlowInEasing
+//                            )
+//                        )
+//                    }
                 }
             }
         }

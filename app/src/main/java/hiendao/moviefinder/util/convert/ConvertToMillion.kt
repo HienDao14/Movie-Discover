@@ -2,9 +2,7 @@ package hiendao.moviefinder.util.convert
 
 import java.text.DecimalFormat
 
-fun Int.ConvertToMillion(): String {
-    println(this)
-    val df = DecimalFormat("#.#")
+fun Long.ConvertToMillion(): String {
     if(this.toString().length > 9){
         val num = this.toFloat() / 1000000000
         val numFirst = num.toString().substringBefore(".")

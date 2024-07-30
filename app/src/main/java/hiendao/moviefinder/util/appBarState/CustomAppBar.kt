@@ -61,7 +61,8 @@ fun CustomAppBar(
     progress: Float,
     modifier: Modifier = Modifier,
     title: String,
-    limit: Boolean
+    limit: Boolean,
+    onIconClick: () -> Unit
 ) {
     val imageState = imagePainter.state
 
@@ -70,7 +71,7 @@ fun CustomAppBar(
         mutableStateOf(defaultDominantColor)
     }
 
-    if(limit){
+    if (limit) {
         Surface(
             color = Color.Transparent,
             modifier = modifier.background(
@@ -109,8 +110,7 @@ fun CustomAppBar(
                                         brush = Brush.verticalGradient(colors),
                                         blendMode = BlendMode.DstIn
                                     )
-                                }
-                            ,
+                                },
                             alignment = BiasAlignment(0f, 1f - ((1f - progress) * 0.75f))
                         )
                     }
@@ -137,27 +137,47 @@ fun CustomAppBar(
                                 .graphicsLayer {
                                     alpha = progress * 0.75f
                                 }
-                                .align(alignment = BiasAlignment(0f, 1f - ((1f - progress) * 0.75f))),
+                                .align(
+                                    alignment = BiasAlignment(
+                                        0f,
+                                        1f - ((1f - progress) * 0.75f)
+                                    )
+                                ),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
 
                 if (progress == 0f) {
-                    val context = LocalContext.current
                     Row(
                         modifier = Modifier.padding(top = 30.dp, start = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = {
-                            Toast.makeText(context, "Back", Toast.LENGTH_SHORT).show()
+                            onIconClick()
                         }) {
-                            Icon(imageVector = Icons.Default.ArrowBackIosNew, contentDescription = null)
+                            Icon(
+                                imageVector = Icons.Default.ArrowBackIosNew,
+                                contentDescription = null
+                            )
                         }
                         Text(
                             text = title,
                             fontSize = 20.sp, fontWeight = FontWeight.SemiBold
                         )
+                    }
+                } else {
+                    Box(modifier = Modifier.padding(top = 30.dp, start = 10.dp)) {
+                        IconButton(
+                            onClick = {
+                                onIconClick()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBackIosNew,
+                                contentDescription = null
+                            )
+                        }
                     }
                 }
             }

@@ -23,7 +23,7 @@ data class MovieEntity(
     val voteCount: Int,
     val budget: Int,
     val homepage: String,
-    val revenue: Int,
+    val revenue: Long,
     val runtime: Int,
     val status: String,
     val tagline: String,

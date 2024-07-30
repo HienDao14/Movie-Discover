@@ -1,9 +1,6 @@
 package hiendao.moviefinder.presentation.movieDetail
 
-import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,13 +18,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BrokenImage
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
@@ -47,31 +39,27 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
+import androidx.core.net.toUri
 import androidx.navigation.NavHostController
-import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
-import hiendao.moviefinder.domain.model.movie.Movie
+import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.presentation.movieDetail.credit.CreditSection
+import hiendao.moviefinder.presentation.movieDetail.images.ImageSection
 import hiendao.moviefinder.presentation.movieDetail.overview.OverviewSection
 import hiendao.moviefinder.presentation.movieDetail.recommendation.RecommendationSection
 import hiendao.moviefinder.presentation.state.MovieDetailState
+import hiendao.moviefinder.presentation.uiEvent.MovieDetailEvent
 import hiendao.moviefinder.util.Constant.MaxToolbarHeight
 import hiendao.moviefinder.util.Constant.MinToolbarHeight
 import hiendao.moviefinder.util.NavRoute
@@ -79,6 +67,8 @@ import hiendao.moviefinder.util.appBarState.CustomAppBar
 import hiendao.moviefinder.util.appBarState.ExitUntilCollapsedState
 import hiendao.moviefinder.util.appBarState.ToolbarState
 import hiendao.moviefinder.util.convert.getGenresFromCode
+import hiendao.moviefinder.util.shared_components.CustomImage
+import hiendao.moviefinder.util.shared_components.ImageScreen
 import hiendao.moviefinder.util.shared_components.RatingBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -96,8 +86,19 @@ fun MovieDetailScreen(
     modifier: Modifier = Modifier,
     movie: Movie,
     detailState: MovieDetailState,
-    navHostController: NavHostController
+    navHostController: NavHostController,
+    onEvent: (MovieDetailEvent) -> Unit
 ) {
+    var showImageScreen by remember {
+        mutableStateOf(false)
+    }
+    var imageUriToShow by remember {
+        mutableStateOf("")
+    }
+    var imageTitleToShow by remember {
+        mutableStateOf("")
+    }
+
     val context = LocalContext.current
 
     val refreshScope = rememberCoroutineScope()
@@ -105,9 +106,9 @@ fun MovieDetailScreen(
 
     fun refresh() = refreshScope.launch {
         isRefreshing = true
-        delay(3000)
         //function refresh
-        Toast.makeText(context, "Refresh", Toast.LENGTH_SHORT).show()
+        onEvent(MovieDetailEvent.Refresh(type = "Detail", movieId = movie.id))
+        delay(3000)
         isRefreshing = false
     }
 
@@ -134,6 +135,16 @@ fun MovieDetailScreen(
             .fillMaxSize()
             .nestedScroll(refreshState.nestedScrollConnection)
     ) {
+        if(showImageScreen && imageUriToShow.isNotEmpty()){
+            ImageScreen(
+                uri = imageUriToShow,
+                title = imageTitleToShow,
+                setShowImage = {
+                    showImageScreen = it
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         CustomAppBar(
             imagePainter = imagePainter,
             progress = toolbarState.progress,
@@ -142,7 +153,10 @@ fun MovieDetailScreen(
                 .fillMaxWidth()
                 .height(with(LocalDensity.current) { toolbarState.height.toDp() })
                 .graphicsLayer { translationY = toolbarState.offset },
-            limit = toolbarState.progress != 0f
+            limit = toolbarState.progress != 0f,
+            onIconClick = {
+                navHostController.navigateUp()
+            }
         )
 
         MovieDetailSection(
@@ -150,11 +164,16 @@ fun MovieDetailScreen(
             modifier = modifier.fillMaxSize(),
             scrollState = scrollState,
             detailState = detailState,
-            movieItemClick = {movieId ->
+            movieItemClick = { movieId ->
                 navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movieId}")
             },
-            creditItemClick = {creditId ->
+            creditItemClick = { creditId ->
                 navHostController.navigate("${NavRoute.CREDIT_SCREEN}?creditId=${creditId}")
+            },
+            showImage = {uri, title ->
+                showImageScreen = true
+                imageUriToShow = uri
+                imageTitleToShow = title
             }
         )
 
@@ -166,17 +185,20 @@ fun MovieDetailScreen(
                 .fillMaxWidth()
                 .height(with(LocalDensity.current) { toolbarState.height.toDp() })
                 .graphicsLayer { translationY = toolbarState.offset },
-            limit = toolbarState.progress == 0f
+            limit = toolbarState.progress == 0f,
+            onIconClick = {
+                navHostController.navigateUp()
+            }
         )
 
-        if(refreshState.isRefreshing){
+        if (refreshState.isRefreshing) {
             LaunchedEffect(true) {
                 refresh()
             }
         }
-        
+
         LaunchedEffect(isRefreshing) {
-            if(isRefreshing){
+            if (isRefreshing) {
                 refreshState.startRefresh()
             } else {
                 refreshState.endRefresh()
@@ -195,7 +217,8 @@ fun MovieDetailSection(
     scrollState: ScrollState,
     detailState: MovieDetailState,
     movieItemClick: (Int) -> Unit,
-    creditItemClick: (Int) -> Unit
+    creditItemClick: (Int) -> Unit,
+    showImage: (String, String) -> Unit
 ) {
 
     val pagerState = rememberPagerState(
@@ -207,32 +230,38 @@ fun MovieDetailSection(
         mutableIntStateOf(0)
     }
     val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = modifier
             .fillMaxSize()
+            .padding(top = 50.dp)
             .verticalScroll(scrollState)
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth()
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 100.dp, start = 15.dp, end = 15.dp)
+                .wrapContentHeight()
         ) {
+            CustomImage(
+                imageUrl = makeFullUrl(movie.posterPath),
+                modifier = Modifier.padding(start = 10.dp),
+                width = 120.dp,
+                height = 220.dp,
+                onClick = {
+                    showImage(movie.posterPath, "${movie.title} Poster" )
+                }
+            )
 
-            Row(
+            Spacer(modifier = Modifier.width(20.dp))
+
+            MovieInfoSection(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 150.dp, start = 15.dp, end = 15.dp)
                     .wrapContentHeight()
-            ) {
-                ImageSection(movie = movie, modifier = Modifier.padding(start = 10.dp))
-
-                Spacer(modifier = Modifier.width(20.dp))
-
-                MovieInfoSection(
-                    modifier = Modifier
-                        .wrapContentHeight()
-                        .padding(top = 50.dp),
-                    movie = movie
-                )
-            }
+                    .padding(top = 50.dp),
+                movie = movie
+            )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -293,15 +322,33 @@ fun MovieDetailSection(
                 }
 
                 2 -> {
-                    CreditSection(
-                        movieId = movie.id,
-                        credits = detailState.listCredit,
-                        navigate = {
-                            creditItemClick(it)
+                    if(detailState.isLoading){
+                        Box(modifier = Modifier.fillMaxSize()){
+                            CircularProgressIndicator(modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(50.dp))
+                        }
+                    }
+                    if(detailState.listCredit.isNotEmpty()){
+                        CreditSection(
+                            movieId = movie.id,
+                            credits = detailState.listCredit,
+                            navigate = {
+                                creditItemClick(it)
+                            }
+                        )
+                    }
+                }
+
+                3 -> {
+                    ImageSection(
+                        images = movie.images,
+                        showImage = {uri, title ->
+                            showImage(uri, "\"${movie.title}\" $title")
                         }
                     )
                 }
-                3 -> {}
+
                 4 -> {}
             }
         }
@@ -341,9 +388,6 @@ fun PreviewDetailScreen() {
         collectionId = 1022790
     )
 
-    var overviewExpanded by remember {
-        mutableStateOf(false)
-    }
 
     MovieDetailSection(
         modifier = Modifier.fillMaxSize(),
@@ -351,134 +395,13 @@ fun PreviewDetailScreen() {
         scrollState = rememberScrollState(),
         detailState = MovieDetailState(),
         movieItemClick = {},
-        creditItemClick = {}
-    )
-}
+        creditItemClick = {},
+        showImage = {_, _ ->
 
-@Composable
-fun ImageSection(
-    modifier: Modifier = Modifier,
-    movie: Movie
-) {
-    val context = LocalContext.current
-
-    val imagePainter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(context)
-            .data(makeFullUrl(movie.posterPath))
-            .size(Size.ORIGINAL)
-            .build()
-    )
-
-    val imageState = imagePainter.state
-
-    Card(
-        modifier = modifier
-            .size(width = 120.dp, height = 220.dp),
-        shape = RoundedCornerShape(10.dp),
-        elevation = CardDefaults.cardElevation(5.dp)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            when (imageState) {
-                is AsyncImagePainter.State.Success -> {
-                    Image(
-                        bitmap = imageState.result.drawable.toBitmap().asImageBitmap(),
-                        contentDescription = "Trailer Video",
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                is AsyncImagePainter.State.Loading -> {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .align(Alignment.Center)
-                            .scale(0.5f)
-                    )
-                }
-
-                else -> {
-                    Icon(
-                        imageVector = Icons.Default.BrokenImage,
-                        contentDescription = "No image",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(32.dp)
-                            .alpha(0.8f),
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            }
         }
-    }
+    )
 }
-//
-//@Composable
-//fun VideoTrailerSection(
-//    modifier: Modifier = Modifier,
-//    imagePainter: AsyncImagePainter
-//) {
-//    val imageState = imagePainter.state
-//
-//    Box(
-//        modifier = modifier
-//            .fillMaxWidth()
-//            .height(200.dp),
-//        contentAlignment = Alignment.Center
-//    ) {
-//        when (imageState) {
-//            is AsyncImagePainter.State.Success -> {
-//                Image(
-//                    bitmap = imageState.result.drawable.toBitmap().asImageBitmap(),
-//                    contentDescription = "Trailer Video",
-//                    contentScale = ContentScale.Crop,
-//                    modifier = Modifier
-//                        .fillMaxSize()
-//                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
-//                        .drawWithContent {
-//                            val colors = listOf(
-//                                Color.Black,
-//                                Color.Transparent
-//                            )
-//                            drawContent()
-//                            drawRect(
-//                                brush = Brush.verticalGradient(colors),
-//                                blendMode = BlendMode.DstIn
-//                            )
-//                        }
-//                )
-//            }
-//
-//            is AsyncImagePainter.State.Loading -> {
-//                CircularProgressIndicator(
-//                    color = MaterialTheme.colorScheme.primary,
-//                    modifier = Modifier
-//                        .size(150.dp)
-//                        .align(Alignment.Center)
-//                        .scale(0.5f)
-//                )
-//            }
-//
-//            else -> {
-//                Icon(
-//                    imageVector = Icons.Default.BrokenImage,
-//                    contentDescription = "No image",
-//                    modifier = Modifier
-//                        .fillMaxSize()
-//                        .clip(RoundedCornerShape(10.dp))
-//                        .background(MaterialTheme.colorScheme.background)
-//                        .padding(32.dp),
-//                    tint = MaterialTheme.colorScheme.onBackground
-//                )
-//            }
-//        }
-//    }
-//}
+
 
 @Composable
 fun MovieInfoSection(

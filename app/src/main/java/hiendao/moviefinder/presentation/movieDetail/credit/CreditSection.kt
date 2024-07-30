@@ -99,6 +99,11 @@ fun CreditItem(
 ) {
 
     val movieIndex = credit.movieId.indexOf(movieId.toString())
+
+    if(movieIndex >= credit.character.size || movieIndex == -1){
+        return
+    }
+
     val character = credit.character[movieIndex]
 
     val context = LocalContext.current

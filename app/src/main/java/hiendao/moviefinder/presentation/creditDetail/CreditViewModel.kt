@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import hiendao.moviefinder.domain.repository.CommonRepository
 import hiendao.moviefinder.domain.repository.MovieRepository
 import hiendao.moviefinder.presentation.state.CreditState
+import hiendao.moviefinder.presentation.uiEvent.CreditScreenEvent
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,11 +29,12 @@ class CreditViewModel @Inject constructor(
     fun onEvent(event: CreditScreenEvent){
         when(event){
             is CreditScreenEvent.ChangeFavorite -> {
-                changeFavorite(event.favorite)
+                changeFavorite(event.favorite, event.creditId)
             }
             is CreditScreenEvent.Refresh -> {
                 onRefresh()
             }
+
         }
     }
 
@@ -71,10 +73,9 @@ class CreditViewModel @Inject constructor(
         }
     }
 
-    private fun changeFavorite(favorite: Int){
+    private fun changeFavorite(favorite: Int, creditId: Int){
         viewModelScope.launch {
             withContext(Dispatchers.IO){
-                val creditId = _creditState.value.creditId
                 commonRepository.changeFavoriteCredit(favorite, creditId).collect{result ->
                     when(result){
                         is Resource.Success -> {

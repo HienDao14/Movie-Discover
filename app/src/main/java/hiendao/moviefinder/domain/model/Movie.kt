@@ -1,4 +1,4 @@
-package hiendao.moviefinder.domain.model.movie
+package hiendao.moviefinder.domain.model
 
 import hiendao.moviefinder.util.Category
 
@@ -20,7 +20,7 @@ data class Movie(
     val voteCount: Int,
     val budget: Int,
     val homepage: String,
-    val revenue: Int,
+    val revenue: Long,
     val runtime: Int,
     val status: String,
     val tagline: String,
