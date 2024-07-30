@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import hiendao.moviefinder.domain.repository.CommonRepository
 import hiendao.moviefinder.domain.repository.MovieRepository
 import hiendao.moviefinder.presentation.state.MovieDetailState
+import hiendao.moviefinder.presentation.uiEvent.MovieDetailEvent
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,23 @@ class MovieDetailViewModel @Inject constructor(
 
     private val _movieDetailState = MutableStateFlow(MovieDetailState())
     val movieDetailState = _movieDetailState.asStateFlow()
+
+    fun onEvent(event: MovieDetailEvent){
+        when(event){
+            is MovieDetailEvent.Refresh -> {
+                reload()
+                _movieDetailState.update {
+                    it.copy(
+                        isLoading = true
+                    )
+                }
+                load(event.movieId)
+            }
+            is MovieDetailEvent.onPaginate -> {
+
+            }
+        }
+    }
 
     fun reload(){
         _movieDetailState.update {

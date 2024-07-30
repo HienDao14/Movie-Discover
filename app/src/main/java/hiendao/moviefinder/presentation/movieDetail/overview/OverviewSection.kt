@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import hiendao.moviefinder.domain.model.movie.Movie
+import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.util.convert.ConvertToMillion
 
 
@@ -67,7 +67,7 @@ fun OverviewSection(
         RowInfoSection(
             modifier = Modifier.fillMaxWidth(),
             label = "Budget",
-            info = movie.budget.ConvertToMillion(),
+            info = movie.budget.toLong().ConvertToMillion(),
             null
         )
 

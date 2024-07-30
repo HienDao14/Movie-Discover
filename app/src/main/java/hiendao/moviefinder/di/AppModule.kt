@@ -1,8 +1,8 @@
 package hiendao.moviefinder.di
 
 import android.app.Application
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.room.Room
 import dagger.Module
 import dagger.Provides
@@ -12,9 +12,8 @@ import hiendao.moviefinder.data.local.CreditDAO
 import hiendao.moviefinder.data.local.CreditDatabase
 import hiendao.moviefinder.data.local.MovieDAO
 import hiendao.moviefinder.data.local.MovieDatabase
-import hiendao.moviefinder.data.local.model.MovieEntity
-import hiendao.moviefinder.data.network.MovieNetworkMediator
 import hiendao.moviefinder.data.network.movie.MovieApi
+import hiendao.moviefinder.data.network.search.SearchApi
 import hiendao.moviefinder.data.network.tvseries.TvSeriesApi
 import hiendao.moviefinder.data.network.util.base_url.BaseUrl.BASE_API_URL
 import hiendao.moviefinder.data.network.util.interceptor.MyInterceptor
@@ -63,6 +62,11 @@ class AppModule {
     }
 
     @Provides
+    fun provideSearchApi(retrofit: Retrofit): SearchApi{
+        return retrofit.create(SearchApi::class.java)
+    }
+
+    @Provides
     @Singleton
     fun provideMovieDatabase(app: Application): MovieDatabase{
         return Room.databaseBuilder(
@@ -100,5 +104,11 @@ class AppModule {
         creditDatabase: CreditDatabase
     ): CreditDAO{
         return creditDatabase.creditDao
+    }
+
+    @Provides
+    @Singleton
+    fun provideSharedPref(app: Application): SharedPreferences{
+        return app.getSharedPreferences("prefs", Context.MODE_PRIVATE)
     }
 }

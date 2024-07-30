@@ -5,7 +5,6 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -25,12 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -50,31 +46,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import coil.size.Size
+import androidx.navigation.NavHostController
 import hiendao.moviefinder.R
-import hiendao.moviefinder.data.mapper.makeFullUrl
 import hiendao.moviefinder.domain.model.Credit
 import hiendao.moviefinder.presentation.state.CreditState
+import hiendao.moviefinder.presentation.uiEvent.CreditScreenEvent
+import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.convert.convertDateFormat
+import hiendao.moviefinder.util.shared_components.CustomImage
+import hiendao.moviefinder.util.shared_components.ImageScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -83,11 +74,10 @@ import java.time.LocalDate
 @Composable
 fun CreditScreen(
     modifier: Modifier = Modifier,
-    creditId: Int,
     creditState: CreditState,
-    onEvent: (CreditScreenEvent) -> Unit
+    onEvent: (CreditScreenEvent) -> Unit,
+    navHostController: NavHostController
 ) {
-    val context = LocalContext.current
 
     var topAppBarTitle by remember {
         mutableStateOf("Credit Detail")
@@ -105,6 +95,16 @@ fun CreditScreen(
     }
 
     val refreshState = rememberPullToRefreshState()
+
+    var showImageScreen by remember {
+        mutableStateOf(false)
+    }
+    var imageUriToShow by remember {
+        mutableStateOf("")
+    }
+    var imageTitleToShow by remember {
+        mutableStateOf("")
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -112,7 +112,9 @@ fun CreditScreen(
                     Text(text = topAppBarTitle)
                 },
                 navigationIcon = {
-                    IconButton(onClick = { /*TODO*/ }) {
+                    IconButton(onClick = {
+                        navHostController.navigateUp()
+                    }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBackIosNew,
                             contentDescription = "Navigate back"
@@ -128,6 +130,16 @@ fun CreditScreen(
                 .nestedScroll(refreshState.nestedScrollConnection)
                 .padding(it)
         ) {
+            if(showImageScreen && imageUriToShow.isNotEmpty()){
+                ImageScreen(
+                    uri = imageUriToShow,
+                    title = imageTitleToShow,
+                    setShowImage = {
+                        showImageScreen = it
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
             if (creditState.isLoading && creditState.loadingFor == "credit_detail") {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,
@@ -150,7 +162,15 @@ fun CreditScreen(
                 CreditScreenLoaded(
                     modifier = Modifier.fillMaxSize(),
                     creditState = creditState,
-                    onEvent = onEvent
+                    onEvent = onEvent,
+                    onMovieItemClick = {movieId ->
+                        navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movieId}")
+                    },
+                    showImage = { profilePath, name ->
+                        showImageScreen = true
+                        imageUriToShow = profilePath
+                        imageTitleToShow = name
+                    }
                 )
             }
 
@@ -177,13 +197,14 @@ fun CreditScreen(
 fun CreditScreenLoaded(
     modifier: Modifier = Modifier,
     creditState: CreditState,
-    onEvent: (CreditScreenEvent) -> Unit
+    onEvent: (CreditScreenEvent) -> Unit,
+    onMovieItemClick: (Int) -> Unit,
+    showImage: (String, String) -> Unit
 ) {
     val context = LocalContext.current
 
     val credit = creditState.creditDetail!!
-    val movies = creditState.movies
-    Log.d("movies credit", "in screen: ${movies.joinToString(",") { it.title }}")
+    val movies = creditState.movies.sortedByDescending { it.releaseDate }
 
     val facebookUrl = "https://m.facebook.com/${credit.externalIds[0]}"
     val instagramUrl = "http://instagram.com/_u/${credit.externalIds[1]}"
@@ -195,7 +216,6 @@ fun CreditScreenLoaded(
 
     val smallFontSize = MaterialTheme.typography.bodySmall
     val mediumFontSize = MaterialTheme.typography.bodyMedium
-    val largeTitleSize = MaterialTheme.typography.titleLarge
 
     var ellipseState by remember {
         mutableStateOf(false)
@@ -217,10 +237,14 @@ fun CreditScreenLoaded(
                 .padding(horizontal = 10.dp)
         ) {
 
-            ImageSection(
+            CustomImage(
                 imageUrl = credit.profilePath,
                 width = 120.dp,
-                height = 180.dp
+                height = 180.dp,
+                onClick = {
+                    // Show image view
+                    showImage(credit.profilePath, credit.name)
+                }
             )
 
             Spacer(modifier = Modifier.width(20.dp))
@@ -260,7 +284,7 @@ fun CreditScreenLoaded(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(80.dp)
                         )
-                        Text(text = credit.birthday.convertDateFormat(), style = mediumFontSize)
+                        Text(text = if(credit.birthday != "")credit.birthday.convertDateFormat() else "Unknown", style = mediumFontSize)
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -286,7 +310,7 @@ fun CreditScreenLoaded(
                 .padding(horizontal = 20.dp)
                 .clip(RoundedCornerShape(10.dp)),
             onClick = {
-                onEvent(CreditScreenEvent.ChangeFavorite(if(addedToFavorite) 0 else 1))
+                onEvent(CreditScreenEvent.ChangeFavorite(favorite = if(addedToFavorite) 0 else 1, creditId = credit.id))
                 if(creditState.changeFavorite == true){
                     addedToFavorite = !addedToFavorite
                 } else {
@@ -344,7 +368,11 @@ fun CreditScreenLoaded(
             if (movies.isEmpty()) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(50.dp).fillMaxWidth().align(Alignment.CenterHorizontally).scale(0.5f)
+                    modifier = Modifier
+                        .size(50.dp)
+                        .fillMaxWidth()
+                        .align(Alignment.CenterHorizontally)
+                        .scale(0.5f)
                 )
             } else {
                 LazyRow(
@@ -355,14 +383,22 @@ fun CreditScreenLoaded(
                 ) {
                     items(credit.movieId.size) { index ->
                         Column(
-                            modifier = Modifier.width(130.dp),
+                            modifier = Modifier
+                                .width(130.dp)
+                                .clickable {
+                                    onMovieItemClick(movies[index].id)
+                                },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            ImageSection(
+                            CustomImage(
                                 imageUrl = movies[index].posterPath,
                                 width = 120.dp,
-                                height = 180.dp
+                                height = 180.dp,
+                                onClick = {
+                                    //Navigate to movie detail
+                                    onMovieItemClick(movies[index].id)
+                                }
                             )
                             Spacer(modifier = Modifier.height(10.dp))
 
@@ -517,71 +553,10 @@ fun CreditDetailPreview(
     CreditScreenLoaded(
         modifier = modifier,
         creditState = CreditState(creditDetail = credit),
-        onEvent = {}
-    )
-}
+        onEvent = {},
+        onMovieItemClick = {},
+        showImage = {_, _ ->
 
-@Composable
-fun ImageSection(
-    modifier: Modifier = Modifier,
-    imageUrl: String,
-    width: Dp,
-    height: Dp
-) {
-    val context = LocalContext.current
-
-    val imagePainter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(context)
-            .data(makeFullUrl(imageUrl))
-            .size(Size.ORIGINAL)
-            .build()
-    )
-
-    val imageState = imagePainter.state
-
-    Card(
-        modifier = modifier
-            .size(width = width, height = height),
-        shape = RoundedCornerShape(10.dp),
-        elevation = CardDefaults.cardElevation(5.dp)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            when (imageState) {
-                is AsyncImagePainter.State.Success -> {
-                    Image(
-                        bitmap = imageState.result.drawable.toBitmap().asImageBitmap(),
-                        contentDescription = "Trailer Video",
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                is AsyncImagePainter.State.Loading -> {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .align(Alignment.Center)
-                            .scale(0.5f)
-                    )
-                }
-
-                else -> {
-                    Icon(
-                        imageVector = Icons.Default.BrokenImage,
-                        contentDescription = "No image",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(32.dp)
-                            .alpha(0.8f),
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            }
         }
-    }
+    )
 }

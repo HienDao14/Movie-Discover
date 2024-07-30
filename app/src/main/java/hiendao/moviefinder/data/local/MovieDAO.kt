@@ -11,13 +11,13 @@ import hiendao.moviefinder.data.local.model.MovieEntity
 @Dao
 interface MovieDAO {
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertListMovie(movies: List<MovieEntity>)
 
     @Upsert
     suspend fun upsertMovie(movie: MovieEntity)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovie(movie: MovieEntity)
 
     @Query("UPDATE movie SET credits = :credit WHERE id = :movieId")
@@ -29,11 +29,13 @@ interface MovieDAO {
     @Query("SELECT * FROM movie")
     fun loadAllPaging(): PagingSource<Int, MovieEntity>
 
-    @Query("SELECT * FROM movie WHERE category = :category ORDER BY popularity DESC")
+    @Query("SELECT * FROM movie WHERE category = :category ORDER BY releaseDate DESC")
     fun loadCategoryMoviesPaged(category: String): PagingSource<Int, MovieEntity>
 
-    @Query("SELECT * FROM movie WHERE category = :category ORDER BY popularity DESC")
-    fun loadCategoryMovies(category: String): List<MovieEntity>
+//    SELECT * FROM TableName ORDER BY id OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;
+//    SELECT * FROM movie WHERE category = :category ORDER BY popularity DESC
+    @Query("SELECT * FROM movie WHERE category = :category ORDER BY popularity DESC LIMIT 20 OFFSET :number ")
+    fun loadCategoryMovies(category: String, number: Int): List<MovieEntity>
 
     @Query("SELECT * FROM movie WHERE id = :movieId")
     fun getMovieWithId(movieId: Int): MovieEntity?

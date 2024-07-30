@@ -26,16 +26,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.paging.compose.collectAsLazyPagingItems
 import dagger.hilt.android.AndroidEntryPoint
 import hiendao.moviefinder.presentation.MainScreen
 import hiendao.moviefinder.presentation.MovieViewModel
 import hiendao.moviefinder.presentation.creditDetail.CreditScreen
 import hiendao.moviefinder.presentation.creditDetail.CreditViewModel
+import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailScreen
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailViewModel
-import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
-import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
@@ -48,14 +46,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MovieFinderTheme {
-
-                val mainViewModel = hiltViewModel<MovieViewModel>()
-                val mainUIState = mainViewModel.mainUIState.collectAsState().value
-
                 Surface {
                     Navigation(
-                        modifier = Modifier.fillMaxSize(),
-                        mainUIState = mainUIState
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
@@ -67,14 +60,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Navigation(
     modifier: Modifier = Modifier,
-    mainUIState: MainUIState
 ) {
     val navController = rememberNavController()
 
-    val viewModel = hiltViewModel<MovieViewModel>()
+    val mainViewModel = hiltViewModel<MovieViewModel>()
     val detailViewModel = hiltViewModel<MovieDetailViewModel>()
     val creditViewModel = hiltViewModel<CreditViewModel>()
 
+    val mainUIState = mainViewModel.mainUIState.collectAsState().value
     val detailState = detailViewModel.movieDetailState.collectAsState().value
     val creditState = creditViewModel.creditState.collectAsState().value
 
@@ -86,7 +79,8 @@ fun Navigation(
             MainScreen(
                 modifier = modifier.fillMaxSize(),
                 mainUIState = mainUIState,
-                navHostController = navController
+                navHostController = navController,
+                onEvent = mainViewModel::onEvent
             )
         }
 
@@ -101,11 +95,11 @@ fun Navigation(
             val type = entry.arguments?.getString("type")
             requireNotNull(type)
             if(type == Constant.moviesTrendingNowScreen){
-                val movies = viewModel.popularMoviesPagedData.collectAsLazyPagingItems()
                 MoviesFullScreenWithPaged(
-                    movies = movies,
                     title = type,
-                    navHostController = navController
+                    navHostController = navController,
+                    uiState = mainUIState,
+                    onEvent = mainViewModel::onEvent
                 )
             }
         }
@@ -127,11 +121,12 @@ fun Navigation(
                 delay(500)
             }
 
-            if(detailState.movie != null){
+            if(detailState.movie != null && detailState.movie.images.isNotEmpty() && detailState.listCredit.isNotEmpty()){
                 MovieDetailScreen(
                     movie = detailState.movie,
                     detailState = detailState,
-                    navHostController = navController
+                    navHostController = navController,
+                    onEvent = detailViewModel::onEvent
                 )
             } else if(detailState.isLoading){
                 Box(modifier = Modifier
@@ -175,15 +170,14 @@ fun Navigation(
 
             LaunchedEffect(key1 = true) {
                 creditViewModel.reload()
-                println("Reload credit viewModel with: $creditId")
                 creditViewModel.load(creditId = creditId.toInt())
-                delay(500)
+                delay(2500)
             }
 
             CreditScreen(
-                creditId = creditId.toInt(),
                 creditState = creditState,
-                onEvent = creditViewModel::onEvent
+                onEvent = creditViewModel::onEvent,
+                navHostController = navController
             )
         }
     }

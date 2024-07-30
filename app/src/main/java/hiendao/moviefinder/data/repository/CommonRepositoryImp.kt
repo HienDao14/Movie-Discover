@@ -36,12 +36,17 @@ class CommonRepositoryImp @Inject constructor(
                 if (!remoteCredits.cast.isNullOrEmpty()) {
                     remoteCredits.cast.sortedByDescending { it.popularity }
                         .filter { it.character != null }.take(20).forEach { cast ->
+                            println("Cast: $cast")
                         val localCredit = creditDAO.getCredit(cast.id)
                         if (localCredit != null) {
-                            val movieIds = localCredit.movieId + ",${movieId}"
-                            val characters = localCredit.character + ",${cast.character}"
-                            creditDAO.insertCredit(characters, movieIds, cast.id)
+                            if(!localCredit.movieId.contains(movieId.toString())){
+                                println("Cast: Not null")
+                                val movieIds = localCredit.movieId + ",${movieId}"
+                                val characters = localCredit.character + ",${cast.character}"
+                                creditDAO.insertCredit(characters, movieIds, cast.id)
+                            }
                         } else {
+                            println("Cast: Null")
                             val creditEntity = cast.toCreditEntity(movieId)
 
                             creditDAO.upsertCredit(creditEntity)
@@ -62,13 +67,12 @@ class CommonRepositoryImp @Inject constructor(
                     }
                 }
 
+                println("Cast: $listCreditId")
+
                 movieDAO.updateCredits(
                     credit = listCreditId.joinToString(",") { it.toString() },
                     movieId = movieId
                 )
-                emit(Resource.Success(data = listCredit))
-                emit(Resource.Loading(false))
-                return@flow
             }
 
             val localCredits = creditDAO.getCredits("%${movieId}%")
@@ -77,9 +81,6 @@ class CommonRepositoryImp @Inject constructor(
             return@flow
         }
     }
-
-    //movieDao -> get list creditId -> creditDao get all credit -> return list credit
-    //movieDao -> get EMPTY list creditId -> movieApi call get Credit -> get CreditDTO -> upsert to CreditDao -> update creditId to movieEntity -> continue like 1
 
     override suspend fun getCreditDetail(personId: Int): Flow<Resource<Credit>> {
         return flow {
@@ -124,9 +125,7 @@ class CommonRepositoryImp @Inject constructor(
             emit(Resource.Loading())
 
             try {
-                println("Change Favorite: ${favorite} for ${personId}")
                 creditDAO.changeFavoriteCredit(favorite = favorite, creditId = personId)
-                println("Success")
                 emit(Resource.Success(data = true))
                 emit(Resource.Loading(false))
                 return@flow

@@ -1,7 +1,7 @@
 package hiendao.moviefinder.presentation.state
 
 import hiendao.moviefinder.domain.model.Credit
-import hiendao.moviefinder.domain.model.movie.Movie
+import hiendao.moviefinder.domain.model.Movie
 
 data class CreditState(
     val isLoading: Boolean = false,

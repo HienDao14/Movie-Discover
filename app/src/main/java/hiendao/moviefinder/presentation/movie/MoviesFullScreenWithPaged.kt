@@ -1,6 +1,5 @@
 package hiendao.moviefinder.presentation.movie
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,41 +9,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.TableRows
-import androidx.compose.material.icons.filled.ViewColumn
+import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import androidx.paging.LoadState
-import androidx.paging.compose.LazyPagingItems
-import hiendao.moviefinder.domain.model.movie.Movie
-import hiendao.moviefinder.util.Constant
+import hiendao.moviefinder.presentation.state.MainUIState
+import hiendao.moviefinder.presentation.uiEvent.MainEvent
+import hiendao.moviefinder.util.FilterType
 import hiendao.moviefinder.util.ListingType
 import hiendao.moviefinder.util.NavRoute
 
@@ -52,26 +52,24 @@ import hiendao.moviefinder.util.NavRoute
 @Composable
 fun MoviesFullScreenWithPaged(
     modifier: Modifier = Modifier,
-    movies: LazyPagingItems<Movie>,
     title: String,
-    navHostController: NavHostController
+    navHostController: NavHostController,
+    uiState: MainUIState,
+    onEvent: (MainEvent) -> Unit
 ) {
-    val context = LocalContext.current
 
-    LaunchedEffect(key1 = movies.loadState) {
-        if (movies.loadState.refresh is LoadState.Error) {
-            Log.e(
-                "paging_error",
-                "Error: " + (movies.loadState.refresh as LoadState.Error).error.message
-            )
-        }
-    }
-
-    var listingType by remember {
+    val listingType = rememberSaveable {
         mutableStateOf(ListingType.GRID)
     }
-    val screenTitle = if (title == Constant.moviesTrendingNowScreen) "Movies - Trending Now"
-    else "Tv Series"
+    val filter = rememberSaveable {
+        mutableStateOf(FilterType.TRENDING_WEEK)
+    }
+    var filterShow by remember {
+        mutableStateOf(false)
+    }
+
+    val screenTitle =
+        if (filter.value == FilterType.TRENDING_WEEK) "Movies - Trending Week" else "Movies - Trending Day"
     Scaffold(
         topBar = {
             TopAppBar(
@@ -103,57 +101,124 @@ fun MoviesFullScreenWithPaged(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = {
-                    listingType = ListingType.GRID
+                    listingType.value = ListingType.GRID
+
                 }) {
                     Icon(
                         imageVector = Icons.Default.GridView,
                         contentDescription = "Grid view",
-                        tint = if (listingType == ListingType.GRID) MaterialTheme.colorScheme.primary else Color.Gray
+                        tint = if (listingType.value == ListingType.GRID) MaterialTheme.colorScheme.primary else Color.Gray
                     )
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 IconButton(onClick = {
-                    listingType = ListingType.COLUMN
+                    listingType.value = ListingType.COLUMN
                 }) {
                     Icon(
                         imageVector = Icons.Default.TableRows,
                         contentDescription = "Column view",
-                        tint = if (listingType == ListingType.COLUMN) MaterialTheme.colorScheme.primary else Color.Gray
+                        tint = if (listingType.value == ListingType.COLUMN) MaterialTheme.colorScheme.primary else Color.Gray
                     )
+                }
+
+                Box {
+                    IconButton(
+                        onClick = {
+                            filterShow = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FilterAlt,
+                            contentDescription = "Filter"
+                        )
+                    }
+
+                    DropdownMenu(expanded = filterShow, onDismissRequest = { filterShow = false }) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Trending Week")
+                            },
+                            onClick = {
+                                if (filter.value != FilterType.TRENDING_WEEK) {
+                                    filter.value = FilterType.TRENDING_WEEK
+                                    onEvent(MainEvent.StartLoad(filter.value.name))
+                                }
+                                filterShow = false
+                            },
+                            trailingIcon = {
+                                if (filter.value == FilterType.TRENDING_WEEK) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Checked"
+                                    )
+                                }
+                            },
+                            colors = MenuDefaults.itemColors(
+                                textColor = if (filter.value == FilterType.TRENDING_WEEK) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                                trailingIconColor = if (filter.value == FilterType.TRENDING_WEEK) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                            )
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Trending Day")
+                            },
+                            onClick = {
+                                if (filter.value != FilterType.TRENDING_DAY) {
+                                    filter.value = FilterType.TRENDING_DAY
+                                    onEvent(MainEvent.StartLoad(filter.value.name))
+                                }
+                                filterShow = false
+                            },
+                            trailingIcon = {
+                                if (filter.value == FilterType.TRENDING_DAY) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Checked"
+                                    )
+                                }
+                            },
+                            colors = MenuDefaults.itemColors(
+                                textColor = if (filter.value == FilterType.TRENDING_DAY) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                                trailingIconColor = if (filter.value == FilterType.TRENDING_DAY) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                            )
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Box(modifier = modifier) {
-                if (movies.loadState.refresh is LoadState.Loading) {
+            Box(modifier = modifier.fillMaxWidth()) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(50.dp),
                         color = Color.White
                     )
-                } else {
-                    if (listingType == ListingType.GRID) {
+                }
+                val listMovies =
+                    if (filter.value == FilterType.TRENDING_DAY) uiState.trendingDayMovies else uiState.trendingWeekMovies
+                if (listMovies.isNotEmpty()) {
+
+                    if (listingType.value == ListingType.GRID) {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(movies.itemCount) {
-                                val movie = movies[it]
-                                if (movie != null) {
-                                    MovieItemGridScreen(
-                                        movie = movie,
-                                        navigate = {
-                                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movie.id}")
-                                        })
-                                }
-                            }
+                            items(listMovies.size) { index ->
+                                val movie = listMovies[index]
+                                MovieItemGridScreen(
+                                    movie = movie,
+                                    navigate = {
+                                        navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movie.id}")
+                                    })
 
-                            item {
-                                if (movies.loadState.append is LoadState.Loading) {
-                                    CircularProgressIndicator()
+                                if (index >= listMovies.size - 1 && !uiState.isLoading) {
+                                    onEvent(MainEvent.OnPaginate(filter.value.name))
                                 }
                             }
                         }
@@ -162,15 +227,17 @@ fun MoviesFullScreenWithPaged(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(movies.itemCount) {
-                                val movie = movies[it]
-                                if (movie != null) {
-                                    MovieItemColumnScreen(
-                                        movie = movie,
-                                        navigate = {
-                                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movie.id}")
-                                        }
-                                    )
+                            items(listMovies.size) { index ->
+                                val movie = listMovies[index]
+                                MovieItemColumnScreen(
+                                    movie = movie,
+                                    navigate = {
+                                        navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movie.id}")
+                                    }
+                                )
+
+                                if (index >= listMovies.size - 1 && !uiState.isLoading) {
+                                    onEvent(MainEvent.OnPaginate(filter.value.name))
                                 }
                             }
                         }
