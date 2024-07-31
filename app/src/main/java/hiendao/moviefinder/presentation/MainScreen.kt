@@ -1,11 +1,21 @@
 package hiendao.moviefinder.presentation
 
 
+import android.Manifest
+import android.app.Activity.RESULT_OK
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.speech.RecognizerIntent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Close
@@ -38,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import hiendao.moviefinder.presentation.model.BottomBarItem
@@ -46,6 +57,7 @@ import hiendao.moviefinder.presentation.search.SearchViewModel
 import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.presentation.uiEvent.MainEvent
 import hiendao.moviefinder.presentation.uiEvent.SearchEvent
+import java.util.Locale
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,6 +100,36 @@ fun MainScreen(
     }
     val searchViewModel = hiltViewModel<SearchViewModel>()
     val context = LocalContext.current
+
+
+    val hasPermission = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+    ) == PackageManager.PERMISSION_GRANTED
+
+    var canRecord by remember {
+        mutableStateOf(hasPermission)
+    }
+
+    val recordLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
+            if (it.resultCode == RESULT_OK) {
+                val result: String? =
+                    it.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                        .let { results ->
+                            results?.get(0)
+                        }
+                result?.let {
+                    searchBarActive = true
+                    searchText = it
+                    searchViewModel.onEvent(SearchEvent.OnQueryChange(it))
+                }
+            }
+        }
+    val recordAudioLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) { isGranted ->
+            canRecord = isGranted
+        }
 
     Scaffold(
         bottomBar = {
@@ -146,7 +188,7 @@ fun MainScreen(
 
 
             LaunchedEffect(searchBarActive) {
-                if(!searchBarActive){
+                if (!searchBarActive) {
                     println("Search bar close")
                     searchText = ""
                     searchViewModel.onEvent(SearchEvent.OnExit("Search Screen"))
@@ -157,7 +199,7 @@ fun MainScreen(
                 query = searchText,
                 onQueryChange = {
                     searchText = it
-                    if(it.isNotEmpty()){
+                    if (it.isNotEmpty()) {
                         searchViewModel.onEvent(SearchEvent.OnQueryChange(it))
                     } else {
                         searchViewModel.onEvent(SearchEvent.OnExit("Search Screen"))
@@ -188,27 +230,53 @@ fun MainScreen(
                         Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
                 },
                 trailingIcon = {
-                    if (searchBarActive) {
+                    Row {
                         IconButton(onClick = {
-                            if (searchText.isNotEmpty()) {
-                                searchText = ""
-                                searchViewModel.onEvent(SearchEvent.OnExit("Search Screen"))
+                            if (!canRecord) {
+                                recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             } else {
-                                searchBarActive = false
+                                val intent =
+                                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                        putExtra(
+                                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                        )
+                                        putExtra(
+                                            RecognizerIntent.EXTRA_LANGUAGE,
+                                            "en"
+                                        )
+                                        putExtra(
+                                            RecognizerIntent.EXTRA_PROMPT,
+                                            "Talk your searching movie title"
+                                        )
+
+
+                                    }
+                                recordLauncher.launch(intent)
                             }
-                        }) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
-                        }
-                    } else
-                        IconButton(onClick = {
-                            Toast.makeText(context, "Voice Search Clicked", Toast.LENGTH_SHORT)
-                                .show()
                         }) {
                             Icon(
                                 imageVector = Icons.Default.KeyboardVoice,
                                 contentDescription = "Voice Search"
                             )
                         }
+                        if (searchBarActive) {
+                            Spacer(modifier = Modifier.width(5.dp))
+                            IconButton(onClick = {
+                                if (searchText.isNotEmpty()) {
+                                    searchText = ""
+                                    searchViewModel.onEvent(SearchEvent.OnExit("Search Screen"))
+                                } else {
+                                    searchBarActive = false
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close"
+                                )
+                            }
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
