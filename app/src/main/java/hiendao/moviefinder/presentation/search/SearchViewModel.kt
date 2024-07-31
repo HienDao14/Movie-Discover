@@ -70,6 +70,7 @@ class SearchViewModel @Inject constructor(
                 viewModelScope.launch {
                     withContext(Dispatchers.IO){
                         _searchState.update {
+                            delay(500L)
                             it.copy(
                                 isLoading = false,
                                 errorMsg = null,
