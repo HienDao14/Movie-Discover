@@ -16,8 +16,8 @@ interface CreditDAO {
     @Upsert
     suspend fun upsertCredit(creditEntity: CreditEntity)
 
-    @Query("UPDATE credit SET addedInFavorite = :favorite WHERE id = :creditId")
-    suspend fun changeFavoriteCredit(favorite: Int, creditId: Int)
+    @Query("UPDATE credit SET addedInFavorite = :favorite, addedInFavoriteDate = CASE WHEN :favorite == 1 THEN :addedDate ELSE \"\" END WHERE id = :creditId")
+    suspend fun changeFavoriteCredit(favorite: Int, addedDate: String, creditId: Int)
 
     @Query("UPDATE credit SET character = :characters, movieId = :movieIds WHERE id = :creditId")
     suspend fun insertCredit(characters: String, movieIds: String, creditId : Int)
@@ -27,5 +27,8 @@ interface CreditDAO {
 
     @Query("SELECT * FROM credit WHERE id = :creditId")
     suspend fun getCredit(creditId: Int): CreditEntity?
+
+    @Query("SELECT * FROM credit WHERE addedInFavorite = 1 ORDER BY addedInFavoriteDate DESC LIMIT 20 OFFSET :number")
+    suspend fun getFavoriteCredits(number: Int): List<CreditEntity>
 
 }

@@ -25,7 +25,8 @@ data class CreditEntity(
     val homepage: String,
     val placeOfBirth: String,
     val externalIds: String,
-    val addedInFavorite: Int = 0
+    val addedInFavorite: Int = 0,
+    val addedInFavoriteDate: String = "",
 )
 
 // Movie -> List Credit -> Save CreditEntity -> Credit Detail -> Upsert CreditEntity ->

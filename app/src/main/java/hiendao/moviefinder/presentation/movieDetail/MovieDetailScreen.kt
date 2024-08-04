@@ -1,5 +1,6 @@
 package hiendao.moviefinder.presentation.movieDetail
 
+import android.widget.Toast
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -18,8 +19,14 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
@@ -39,6 +46,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
@@ -58,6 +68,7 @@ import hiendao.moviefinder.presentation.movieDetail.credit.CreditSection
 import hiendao.moviefinder.presentation.movieDetail.images.ImageSection
 import hiendao.moviefinder.presentation.movieDetail.overview.OverviewSection
 import hiendao.moviefinder.presentation.movieDetail.recommendation.RecommendationSection
+import hiendao.moviefinder.presentation.state.FavoriteState
 import hiendao.moviefinder.presentation.state.MovieDetailState
 import hiendao.moviefinder.presentation.uiEvent.MovieDetailEvent
 import hiendao.moviefinder.util.Constant.MaxToolbarHeight
@@ -67,11 +78,13 @@ import hiendao.moviefinder.util.appBarState.CustomAppBar
 import hiendao.moviefinder.util.appBarState.ExitUntilCollapsedState
 import hiendao.moviefinder.util.appBarState.ToolbarState
 import hiendao.moviefinder.util.convert.getGenresFromCode
+import hiendao.moviefinder.util.getAverageColor
 import hiendao.moviefinder.util.shared_components.CustomImage
 import hiendao.moviefinder.util.shared_components.ImageScreen
 import hiendao.moviefinder.util.shared_components.RatingBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 
 @Composable
 private fun rememberToolbarState(toolbarHeightRange: IntRange): ToolbarState {
@@ -135,7 +148,7 @@ fun MovieDetailScreen(
             .fillMaxSize()
             .nestedScroll(refreshState.nestedScrollConnection)
     ) {
-        if(showImageScreen && imageUriToShow.isNotEmpty()){
+        if (showImageScreen && imageUriToShow.isNotEmpty()) {
             ImageScreen(
                 uri = imageUriToShow,
                 title = imageTitleToShow,
@@ -170,10 +183,13 @@ fun MovieDetailScreen(
             creditItemClick = { creditId ->
                 navHostController.navigate("${NavRoute.CREDIT_SCREEN}?creditId=${creditId}")
             },
-            showImage = {uri, title ->
+            showImage = { uri, title ->
                 showImageScreen = true
                 imageUriToShow = uri
                 imageTitleToShow = title
+            },
+            changeFavoriteClick = {favorite, date, movieId ->
+                onEvent(MovieDetailEvent.AddToFavorite(favorite, date, movieId))
             }
         )
 
@@ -218,6 +234,7 @@ fun MovieDetailSection(
     detailState: MovieDetailState,
     movieItemClick: (Int) -> Unit,
     creditItemClick: (Int) -> Unit,
+    changeFavoriteClick: (Int, String, Int) -> Unit,
     showImage: (String, String) -> Unit
 ) {
 
@@ -250,7 +267,7 @@ fun MovieDetailSection(
                 width = 120.dp,
                 height = 220.dp,
                 onClick = {
-                    showImage(movie.posterPath, "${movie.title} Poster" )
+                    showImage(movie.posterPath, "${movie.title} Poster")
                 }
             )
 
@@ -260,7 +277,8 @@ fun MovieDetailSection(
                 modifier = Modifier
                     .wrapContentHeight()
                     .padding(top = 50.dp),
-                movie = movie
+                movie = movie,
+                changeFavoriteClick
             )
         }
 
@@ -322,14 +340,16 @@ fun MovieDetailSection(
                 }
 
                 2 -> {
-                    if(detailState.isLoading){
-                        Box(modifier = Modifier.fillMaxSize()){
-                            CircularProgressIndicator(modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(50.dp))
+                    if (detailState.isLoading) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(50.dp)
+                            )
                         }
                     }
-                    if(detailState.listCredit.isNotEmpty()){
+                    if (detailState.listCredit.isNotEmpty()) {
                         CreditSection(
                             movieId = movie.id,
                             credits = detailState.listCredit,
@@ -343,7 +363,7 @@ fun MovieDetailSection(
                 3 -> {
                     ImageSection(
                         images = movie.images,
-                        showImage = {uri, title ->
+                        showImage = { uri, title ->
                             showImage(uri, "\"${movie.title}\" $title")
                         }
                     )
@@ -396,7 +416,10 @@ fun PreviewDetailScreen() {
         detailState = MovieDetailState(),
         movieItemClick = {},
         creditItemClick = {},
-        showImage = {_, _ ->
+        showImage = { _, _ ->
+
+        },
+        changeFavoriteClick = {_, _, _ ->
 
         }
     )
@@ -406,12 +429,19 @@ fun PreviewDetailScreen() {
 @Composable
 fun MovieInfoSection(
     modifier: Modifier = Modifier,
-    movie: Movie
+    movie: Movie,
+    changeFavoriteClick: (Int, String, Int) -> Unit
 ) {
     val genres = getGenresFromCode(movie.genreIds).joinToString(" - ") { it.name }
 
     val runtimeText = if (movie.runtime > 60) "${movie.runtime / 60} hr ${movie.runtime % 60} min"
     else "${movie.runtime} min"
+
+    val addedToFavorite = rememberSaveable {
+        mutableStateOf(movie.addedInFavorite)
+    }
+
+    val context = LocalContext.current
 
     Column(
         modifier = modifier
@@ -437,25 +467,55 @@ fun MovieInfoSection(
 
         Spacer(modifier = Modifier.height(5.dp))
 
-        Text(
-            text = runtimeText,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Normal
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = runtimeText,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal
+                )
 
-        Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(5.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RatingBar(
-                starsModifier = Modifier.size(12.dp),
-                rating = movie.voteAverage / 2
-            )
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(
-                text = movie.voteAverage.toString().take(3),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal
-            )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RatingBar(
+                        starsModifier = Modifier.size(12.dp),
+                        rating = movie.voteAverage / 2
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = movie.voteAverage.toString().take(3),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
+
+            Button(
+                onClick = {
+                    val favorite = if(addedToFavorite.value) 0 else 1
+                    val dateTime = LocalDateTime.now()
+                    changeFavoriteClick(favorite, dateTime.toString(), movie.id)
+                    addedToFavorite.value = !addedToFavorite.value
+                }, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 15.dp)
+                    .clip(RoundedCornerShape(6.dp))
+            ) {
+                if (addedToFavorite.value) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = "Added to favorite"
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.FavoriteBorder,
+                        contentDescription = "Add to favorite"
+                    )
+                }
+            }
         }
     }
 }

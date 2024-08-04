@@ -31,9 +31,11 @@ import hiendao.moviefinder.presentation.MainScreen
 import hiendao.moviefinder.presentation.MovieViewModel
 import hiendao.moviefinder.presentation.creditDetail.CreditScreen
 import hiendao.moviefinder.presentation.creditDetail.CreditViewModel
+import hiendao.moviefinder.presentation.favorite.FavoriteViewModel
 import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailScreen
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailViewModel
+import hiendao.moviefinder.presentation.state.FavoriteState
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
@@ -66,10 +68,12 @@ fun Navigation(
     val mainViewModel = hiltViewModel<MovieViewModel>()
     val detailViewModel = hiltViewModel<MovieDetailViewModel>()
     val creditViewModel = hiltViewModel<CreditViewModel>()
+    val favoriteViewModel = hiltViewModel<FavoriteViewModel>()
 
     val mainUIState = mainViewModel.mainUIState.collectAsState().value
     val detailState = detailViewModel.movieDetailState.collectAsState().value
     val creditState = creditViewModel.creditState.collectAsState().value
+    val favoriteScreenState = favoriteViewModel.favoriteState.collectAsState().value
 
     NavHost(navController = navController, startDestination = NavRoute.HOME_SCREEN.name) {
 
@@ -79,8 +83,10 @@ fun Navigation(
             MainScreen(
                 modifier = modifier.fillMaxSize(),
                 mainUIState = mainUIState,
+                favoriteScreenState = favoriteScreenState,
                 navHostController = navController,
-                onEvent = mainViewModel::onEvent
+                onEvent = mainViewModel::onEvent,
+                onFavoriteEvent = favoriteViewModel::onEvent
             )
         }
 

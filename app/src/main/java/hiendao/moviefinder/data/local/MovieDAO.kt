@@ -11,20 +11,20 @@ import hiendao.moviefinder.data.local.model.MovieEntity
 @Dao
 interface MovieDAO {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertListMovie(movies: List<MovieEntity>)
 
     @Upsert
     suspend fun upsertMovie(movie: MovieEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMovie(movie: MovieEntity)
 
     @Query("UPDATE movie SET credits = :credit WHERE id = :movieId")
     suspend fun updateCredits(credit: String, movieId: Int)
 
-    @Query("UPDATE movie SET addedToFavorite = :addedToFavorite WHERE id = :movieId")
-    suspend fun changeFavorite(addedToFavorite: Int, movieId: Int)
+    @Query("UPDATE movie SET addedToFavorite = :addedToFavorite, addedInFavoriteDate = CASE WHEN :addedToFavorite == 1 THEN :date ELSE \"\" END WHERE id = :movieId")
+    suspend fun changeFavorite(addedToFavorite: Int, date: String, movieId: Int)
 
     @Query("SELECT * FROM movie")
     fun loadAllPaging(): PagingSource<Int, MovieEntity>
@@ -48,4 +48,7 @@ interface MovieDAO {
 
     @Query("DELETE FROM movie WHERE category = :category")
     fun deleteAllMovieWithCategory(category: String)
+
+    @Query("SELECT * FROM movie WHERE addedToFavorite = 1 ORDER BY addedInFavoriteDate DESC LIMIT 20 OFFSET :number")
+    fun getFavoriteMovies(number: Int): List<MovieEntity>
 }

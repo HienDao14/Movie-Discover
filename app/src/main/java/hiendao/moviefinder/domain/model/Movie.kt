@@ -30,5 +30,6 @@ data class Movie(
     val images: List<String>,
     val videos: List<String>,
     val collectionId: Int,
-    val mediaType: String ?= null
+    val mediaType: String ?= null,
+    val addedInFavorite: Boolean = false
 )

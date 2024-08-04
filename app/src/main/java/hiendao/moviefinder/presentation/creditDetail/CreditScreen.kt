@@ -69,6 +69,7 @@ import hiendao.moviefinder.util.shared_components.ImageScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,7 +131,7 @@ fun CreditScreen(
                 .nestedScroll(refreshState.nestedScrollConnection)
                 .padding(it)
         ) {
-            if(showImageScreen && imageUriToShow.isNotEmpty()){
+            if (showImageScreen && imageUriToShow.isNotEmpty()) {
                 ImageScreen(
                     uri = imageUriToShow,
                     title = imageTitleToShow,
@@ -163,7 +164,7 @@ fun CreditScreen(
                     modifier = Modifier.fillMaxSize(),
                     creditState = creditState,
                     onEvent = onEvent,
-                    onMovieItemClick = {movieId ->
+                    onMovieItemClick = { movieId ->
                         navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movieId}")
                     },
                     showImage = { profilePath, name ->
@@ -174,21 +175,24 @@ fun CreditScreen(
                 )
             }
 
-            if(refreshState.isRefreshing){
+            if (refreshState.isRefreshing) {
                 LaunchedEffect(true) {
                     refresh()
                 }
             }
 
             LaunchedEffect(isRefreshing) {
-                if(isRefreshing){
+                if (isRefreshing) {
                     refreshState.startRefresh()
                 } else {
                     refreshState.endRefresh()
                 }
             }
 
-            PullToRefreshContainer(state = refreshState, modifier = Modifier.align(Alignment.TopCenter))
+            PullToRefreshContainer(
+                state = refreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }
@@ -284,7 +288,10 @@ fun CreditScreenLoaded(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(80.dp)
                         )
-                        Text(text = if(credit.birthday != "")credit.birthday.convertDateFormat() else "Unknown", style = mediumFontSize)
+                        Text(
+                            text = if (credit.birthday != "") credit.birthday.convertDateFormat() else "Unknown",
+                            style = mediumFontSize
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -310,16 +317,22 @@ fun CreditScreenLoaded(
                 .padding(horizontal = 20.dp)
                 .clip(RoundedCornerShape(10.dp)),
             onClick = {
-                onEvent(CreditScreenEvent.ChangeFavorite(favorite = if(addedToFavorite) 0 else 1, creditId = credit.id))
-                if(creditState.changeFavorite == true){
-                    addedToFavorite = !addedToFavorite
-                } else {
-                    Toast.makeText(context, "Some errors happended", Toast.LENGTH_SHORT).show()
-                }
+                val date = LocalDateTime.now()
+                onEvent(
+                    CreditScreenEvent.ChangeFavorite(
+                        favorite = if (addedToFavorite) 0 else 1,
+                        addedDate = date.toString(),
+                        creditId = credit.id
+                    )
+                )
+                addedToFavorite = !addedToFavorite
             }
         ) {
-            if(!addedToFavorite){
-                Icon(imageVector = Icons.Default.FavoriteBorder, contentDescription = "Add to favorite")
+            if (!addedToFavorite) {
+                Icon(
+                    imageVector = Icons.Default.FavoriteBorder,
+                    contentDescription = "Add to favorite"
+                )
                 Spacer(modifier = Modifier.width(5.dp))
                 Text(text = "Add to favorites", style = mediumFontSize)
             } else {
@@ -420,7 +433,7 @@ fun CreditScreenLoaded(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if(!(credit.externalIds[0] == "null" && credit.externalIds[1] == "null" && credit.externalIds[2] == "null")){
+        if (!(credit.externalIds[0] == "null" && credit.externalIds[1] == "null" && credit.externalIds[2] == "null")) {
             Column {
                 Text(text = "Social Media", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
 
@@ -555,7 +568,7 @@ fun CreditDetailPreview(
         creditState = CreditState(creditDetail = credit),
         onEvent = {},
         onMovieItemClick = {},
-        showImage = {_, _ ->
+        showImage = { _, _ ->
 
         }
     )

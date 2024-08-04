@@ -110,7 +110,8 @@ fun MovieEntity.toMovie(): Movie {
         },
         images = images.split(";").map { it },
         videos = videos?.split(",")?.map { it } ?: emptyList(),
-        collectionId = collectionId
+        collectionId = collectionId,
+        addedInFavorite = addedToFavorite == 1
     )
 }
 
@@ -425,7 +426,7 @@ fun MovieCrew.toMovieEntity(category: Category, index: Int): MovieEntity {
 fun CreditDetail.toCreditEntity(type: String): CreditEntity {
     return CreditEntity(
         adult = adult ?: false,
-        character = movie_credits?.cast?.filter { it?.character != null && !it.character.contains("(voice)") }
+        character = movie_credits?.cast?.filter { it?.character != null }
             ?.joinToString(",") { it?.character!! } ?: "",
         gender = gender ?: -1, //1 - nu, 2 - nam
         id = id,
@@ -455,7 +456,7 @@ fun CreditDetail.toCreditEntity(type: String): CreditEntity {
 fun CreditDetail.toCredit(type: String): Credit {
     return Credit(
         adult = adult ?: false,
-        character = movie_credits?.cast?.filter { it?.character != null && !it.character.contains("(voice)") }
+        character = movie_credits?.cast?.filter { it?.character != null  }
             ?.map { it?.character!! } ?: emptyList(),
         gender = gender ?: -1, //1 - nu, 2 - nam
         id = id,
@@ -466,7 +467,7 @@ fun CreditDetail.toCredit(type: String): Credit {
         department = "",
         job = "",
         type = type,
-        movieId = movie_credits?.cast?.filter { it?.character != null && !it.character.contains("(voice)") }
+        movieId = movie_credits?.cast?.filter { it?.character != null  }
             ?.map { it?.id.toString() } ?: emptyList(),
         biography = biography ?: "",
         birthday = birthday ?: "",

@@ -602,4 +602,26 @@ class MovieRepositoryImp @Inject constructor(
             }
         }
     }
+
+    override suspend fun changeFavoriteMovie(
+        favorite: Int,
+        addedDate: String,
+        movieId: Int
+    ): Flow<Resource<Boolean>> {
+        return flow {
+            emit(Resource.Loading())
+
+            try {
+                movieDAO.changeFavorite(favorite, addedDate, movieId)
+                emit(Resource.Success(data = true))
+                emit(Resource.Loading(false))
+                return@flow
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emit(Resource.Error(e.message))
+                emit(Resource.Loading(false))
+                return@flow
+            }
+        }
+    }
 }

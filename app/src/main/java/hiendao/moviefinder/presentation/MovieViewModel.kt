@@ -38,8 +38,12 @@ class MovieViewModel @Inject constructor(
         when (event) {
             is MainEvent.Refresh -> {
                 restartState()
-
-                load(isRefresh = true)
+                if(event.type == "PagedScreen"){
+                    getTrendingWeekMovies(isRefresh = true)
+                    getTrendingDayMovies(isRefresh = true)
+                } else {
+                    load(isRefresh = true)
+                }
             }
 
             is MainEvent.OnPaginate -> {

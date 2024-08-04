@@ -53,7 +53,6 @@ fun CreditSection(
     credits: List<Credit>,
     navigate: (Int) -> Unit
 ) {
-    println("MovieId : ${movieId}")
     val directors = credits.filter { it.job == "Director" }
     val actors = credits.filter { it.job != "Director" }
 
@@ -101,6 +100,8 @@ fun CreditItem(
     val movieIndex = credit.movieId.indexOf(movieId.toString())
 
     if(movieIndex >= credit.character.size || movieIndex == -1){
+        println("${credit.movieId.get(movieIndex)} in $movieIndex")
+        println(credit.character.size)
         return
     }
 

@@ -9,13 +9,27 @@ import kotlinx.coroutines.flow.Flow
 interface MovieRepository {
     suspend fun getMovieDetail(movieId: Int): Flow<Resource<Movie>>
 
-    suspend fun getTopRatedMovies(page: Int = 1, isRefresh: Boolean = false, shouldCallNetwork: Boolean = false): Flow<Resource<List<Movie>>>
+    suspend fun getTopRatedMovies(
+        page: Int = 1,
+        isRefresh: Boolean = false,
+        shouldCallNetwork: Boolean = false
+    ): Flow<Resource<List<Movie>>>
 
-    suspend fun getPopularMovies(page: Int = 1, isRefresh: Boolean = false): Flow<Resource<List<Movie>>>
+    suspend fun getPopularMovies(
+        page: Int = 1,
+        isRefresh: Boolean = false
+    ): Flow<Resource<List<Movie>>>
 
-    suspend fun getTrendingDayMovies(page: Int = 1, isRefresh: Boolean = false): Flow<Resource<List<Movie>>>
+    suspend fun getTrendingDayMovies(
+        page: Int = 1,
+        isRefresh: Boolean = false
+    ): Flow<Resource<List<Movie>>>
 
-    suspend fun getTrendingWeekMovies(page: Int = 1, isRefresh: Boolean = false, shouldCallNetwork: Boolean = false): Flow<Resource<List<Movie>>>
+    suspend fun getTrendingWeekMovies(
+        page: Int = 1,
+        isRefresh: Boolean = false,
+        shouldCallNetwork: Boolean = false
+    ): Flow<Resource<List<Movie>>>
 
     suspend fun getSimilarMovies(movieId: Int): Flow<Resource<List<Movie>>>
 
@@ -30,4 +44,6 @@ interface MovieRepository {
         sortBy: String = "popularity.desc",
         voteCountGte: Float?
     ): Flow<Resource<List<Movie>>>
+
+    suspend fun changeFavoriteMovie(favorite: Int, addedDate: String, movieId: Int): Flow<Resource<Boolean>>
 }

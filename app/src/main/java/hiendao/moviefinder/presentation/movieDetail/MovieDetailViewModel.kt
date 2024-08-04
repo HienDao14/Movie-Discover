@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import hiendao.moviefinder.domain.repository.CommonRepository
 import hiendao.moviefinder.domain.repository.MovieRepository
+import hiendao.moviefinder.presentation.state.FavoriteState
 import hiendao.moviefinder.presentation.state.MovieDetailState
 import hiendao.moviefinder.presentation.uiEvent.MovieDetailEvent
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,6 +29,9 @@ class MovieDetailViewModel @Inject constructor(
     private val _movieDetailState = MutableStateFlow(MovieDetailState())
     val movieDetailState = _movieDetailState.asStateFlow()
 
+    private val _favoriteState = MutableSharedFlow<FavoriteState>()
+    val favoriteState = _favoriteState.asSharedFlow()
+
     fun onEvent(event: MovieDetailEvent){
         when(event){
             is MovieDetailEvent.Refresh -> {
@@ -39,6 +45,21 @@ class MovieDetailViewModel @Inject constructor(
             }
             is MovieDetailEvent.onPaginate -> {
 
+            }
+
+            is MovieDetailEvent.AddToFavorite -> {
+                viewModelScope.launch {
+                    withContext(Dispatchers.IO){
+                        _favoriteState.emit(
+                            FavoriteState(
+                                isLoading = false,
+                                isSuccess = null,
+                                errorMsg = null
+                            )
+                        )
+                        changeFavorite(event.favorite, event.date, event.movieId)
+                    }
+                }
             }
         }
     }
@@ -215,6 +236,28 @@ class MovieDetailViewModel @Inject constructor(
                                     errorMsg = result.message.toString()
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun changeFavorite(
+        favorite: Int, addedDate: String, movieId: Int
+    ){
+        viewModelScope.launch {
+            withContext(Dispatchers.IO){
+                movieRepository.changeFavoriteMovie(favorite, addedDate, movieId).collect{result ->
+                    when(result){
+                        is Resource.Success -> Unit
+                        is Resource.Loading -> Unit
+                        is Resource.Error -> {
+                           _movieDetailState.update {
+                               it.copy(
+                                   errorMsg = result.message.toString()
+                               )
+                           }
                         }
                     }
                 }

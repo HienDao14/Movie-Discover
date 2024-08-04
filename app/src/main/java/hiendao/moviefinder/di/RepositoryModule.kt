@@ -1,6 +1,5 @@
 package hiendao.moviefinder.di
 
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -11,9 +10,11 @@ import hiendao.moviefinder.data.local.MovieDatabase
 import hiendao.moviefinder.data.network.movie.MovieApi
 import hiendao.moviefinder.data.network.search.SearchApi
 import hiendao.moviefinder.data.repository.CommonRepositoryImp
+import hiendao.moviefinder.data.repository.FavoriteRepositoryImp
 import hiendao.moviefinder.data.repository.MovieRepositoryImp
 import hiendao.moviefinder.data.repository.SearchRepositoryImp
 import hiendao.moviefinder.domain.repository.CommonRepository
+import hiendao.moviefinder.domain.repository.FavoriteRepository
 import hiendao.moviefinder.domain.repository.MovieRepository
 import hiendao.moviefinder.domain.repository.SearchRepository
 import javax.inject.Singleton
@@ -50,5 +51,14 @@ class RepositoryModule {
         movieDAO: MovieDAO
     ): SearchRepository{
         return SearchRepositoryImp(searchApi, movieDAO)
+    }
+
+    @Provides
+    @Singleton
+    fun bindFavoriteRepository(
+        movieDAO: MovieDAO,
+        creditDAO: CreditDAO
+    ): FavoriteRepository{
+        return FavoriteRepositoryImp(movieDAO, creditDAO)
     }
 }
