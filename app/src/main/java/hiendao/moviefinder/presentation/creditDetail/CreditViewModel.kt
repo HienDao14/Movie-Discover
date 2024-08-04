@@ -29,7 +29,7 @@ class CreditViewModel @Inject constructor(
     fun onEvent(event: CreditScreenEvent){
         when(event){
             is CreditScreenEvent.ChangeFavorite -> {
-                changeFavorite(event.favorite, event.creditId)
+                changeFavorite(event.favorite, event.addedDate, event.creditId)
             }
             is CreditScreenEvent.Refresh -> {
                 onRefresh()
@@ -73,10 +73,16 @@ class CreditViewModel @Inject constructor(
         }
     }
 
-    private fun changeFavorite(favorite: Int, creditId: Int){
+    private fun changeFavorite(favorite: Int, addedDate: String, creditId: Int){
         viewModelScope.launch {
             withContext(Dispatchers.IO){
-                commonRepository.changeFavoriteCredit(favorite, creditId).collect{result ->
+                _creditState.update {
+                    it.copy(
+                        isLoading = true,
+                        loadingFor = "favorite"
+                    )
+                }
+                commonRepository.changeFavoriteCredit(favorite, addedDate, creditId).collect{result ->
                     when(result){
                         is Resource.Success -> {
                             result.data?.let {success->
@@ -90,7 +96,7 @@ class CreditViewModel @Inject constructor(
                         is Resource.Loading -> {
                             _creditState.update {
                                 it.copy(
-                                    isLoading = true,
+                                    isLoading = result.isLoading,
                                     loadingFor = "favorite"
                                 )
                             }
@@ -105,7 +111,6 @@ class CreditViewModel @Inject constructor(
                         }
                     }
                 }
-
             }
         }
     }

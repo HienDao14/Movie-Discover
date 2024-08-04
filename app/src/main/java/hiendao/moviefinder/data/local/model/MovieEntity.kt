@@ -37,5 +37,6 @@ data class MovieEntity(
     val collectionId: Int,
     val mediaType : String?= null,
     val credits: String,
-    val addedToFavorite: Int = 0
+    val addedToFavorite: Int = 0,
+    val addedInFavoriteDate: String = ""
 )

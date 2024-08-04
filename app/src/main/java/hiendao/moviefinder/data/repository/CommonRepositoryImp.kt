@@ -36,17 +36,14 @@ class CommonRepositoryImp @Inject constructor(
                 if (!remoteCredits.cast.isNullOrEmpty()) {
                     remoteCredits.cast.sortedByDescending { it.popularity }
                         .filter { it.character != null }.take(20).forEach { cast ->
-                            println("Cast: $cast")
                         val localCredit = creditDAO.getCredit(cast.id)
                         if (localCredit != null) {
                             if(!localCredit.movieId.contains(movieId.toString())){
-                                println("Cast: Not null")
                                 val movieIds = localCredit.movieId + ",${movieId}"
                                 val characters = localCredit.character + ",${cast.character}"
                                 creditDAO.insertCredit(characters, movieIds, cast.id)
                             }
                         } else {
-                            println("Cast: Null")
                             val creditEntity = cast.toCreditEntity(movieId)
 
                             creditDAO.upsertCredit(creditEntity)
@@ -66,8 +63,6 @@ class CommonRepositoryImp @Inject constructor(
                         listCreditId.add(crew.id)
                     }
                 }
-
-                println("Cast: $listCreditId")
 
                 movieDAO.updateCredits(
                     credit = listCreditId.joinToString(",") { it.toString() },
@@ -119,13 +114,14 @@ class CommonRepositoryImp @Inject constructor(
 
     override suspend fun changeFavoriteCredit(
         favorite: Int,
+        addedDate: String,
         personId: Int
     ): Flow<Resource<Boolean>> {
         return flow {
             emit(Resource.Loading())
 
             try {
-                creditDAO.changeFavoriteCredit(favorite = favorite, creditId = personId)
+                creditDAO.changeFavoriteCredit(favorite = favorite, addedDate = addedDate, creditId = personId)
                 emit(Resource.Success(data = true))
                 emit(Resource.Loading(false))
                 return@flow

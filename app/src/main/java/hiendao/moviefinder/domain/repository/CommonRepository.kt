@@ -10,5 +10,5 @@ interface CommonRepository {
 
     suspend fun getCreditDetail(personId: Int): Flow<Resource<Credit>>
 
-    suspend fun changeFavoriteCredit(favorite: Int, personId: Int): Flow<Resource<Boolean>>
+    suspend fun changeFavoriteCredit(favorite: Int, addedDate: String, personId: Int): Flow<Resource<Boolean>>
 }

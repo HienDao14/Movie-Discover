@@ -54,7 +54,9 @@ import androidx.navigation.NavHostController
 import hiendao.moviefinder.presentation.model.BottomBarItem
 import hiendao.moviefinder.presentation.search.SearchScreen
 import hiendao.moviefinder.presentation.search.SearchViewModel
+import hiendao.moviefinder.presentation.state.FavoriteScreenState
 import hiendao.moviefinder.presentation.state.MainUIState
+import hiendao.moviefinder.presentation.uiEvent.FavoriteScreenEvent
 import hiendao.moviefinder.presentation.uiEvent.MainEvent
 import hiendao.moviefinder.presentation.uiEvent.SearchEvent
 import java.util.Locale
@@ -65,8 +67,10 @@ import java.util.Locale
 fun MainScreen(
     modifier: Modifier = Modifier,
     mainUIState: MainUIState,
+    favoriteScreenState: FavoriteScreenState,
     navHostController: NavHostController,
-    onEvent: (MainEvent) -> Unit
+    onEvent: (MainEvent) -> Unit,
+    onFavoriteEvent: (FavoriteScreenEvent) -> Unit
 ) {
     val screenSelected = rememberSaveable {
         mutableIntStateOf(0)
@@ -178,11 +182,11 @@ fun MainScreen(
                     onEvent = onEvent
                 )
 
-                2 -> HomeScreen(
+                2 -> FavoriteScreen(
                     modifier = Modifier.fillMaxSize(),
-                    uiState = mainUIState,
                     navHostController = navHostController,
-                    onEvent
+                    favoriteScreenState = favoriteScreenState,
+                    onEvent = onFavoriteEvent
                 )
             }
 

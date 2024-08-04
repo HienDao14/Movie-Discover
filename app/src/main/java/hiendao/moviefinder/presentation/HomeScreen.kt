@@ -74,7 +74,6 @@ fun HomeScreen(
                     .padding(horizontal = 12.dp)
             ) {
                 if (uiState.isLoading) {
-                    println("Loading")
                     CircularProgressIndicator(
                         modifier = Modifier
                             .align(Alignment.Center)
