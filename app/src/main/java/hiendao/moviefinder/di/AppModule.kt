@@ -12,6 +12,8 @@ import hiendao.moviefinder.data.local.CreditDAO
 import hiendao.moviefinder.data.local.CreditDatabase
 import hiendao.moviefinder.data.local.MovieDAO
 import hiendao.moviefinder.data.local.MovieDatabase
+import hiendao.moviefinder.data.local.TvSeriesDAO
+import hiendao.moviefinder.data.local.TvSeriesDatabase
 import hiendao.moviefinder.data.network.movie.MovieApi
 import hiendao.moviefinder.data.network.search.SearchApi
 import hiendao.moviefinder.data.network.tvseries.TvSeriesApi
@@ -92,6 +94,18 @@ class AppModule {
 
     @Provides
     @Singleton
+    fun provideTvSeriesDatabase(app: Application): TvSeriesDatabase{
+        return Room.databaseBuilder(
+            app,
+            TvSeriesDatabase::class.java,
+            "tvseriesdb.db"
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+    }
+
+    @Provides
+    @Singleton
     fun provideMovieDAO(
         movieDatabase: MovieDatabase
     ): MovieDAO{
@@ -104,6 +118,14 @@ class AppModule {
         creditDatabase: CreditDatabase
     ): CreditDAO{
         return creditDatabase.creditDao
+    }
+
+    @Provides
+    @Singleton
+    fun provideTvSeriesDAO(
+        tvSeriesDatabase: TvSeriesDatabase
+    ): TvSeriesDAO{
+        return tvSeriesDatabase.dao
     }
 
     @Provides

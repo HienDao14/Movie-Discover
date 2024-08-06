@@ -26,15 +26,9 @@ interface MovieDAO {
     @Query("UPDATE movie SET addedToFavorite = :addedToFavorite, addedInFavoriteDate = CASE WHEN :addedToFavorite == 1 THEN :date ELSE \"\" END WHERE id = :movieId")
     suspend fun changeFavorite(addedToFavorite: Int, date: String, movieId: Int)
 
-    @Query("SELECT * FROM movie")
-    fun loadAllPaging(): PagingSource<Int, MovieEntity>
-
-    @Query("SELECT * FROM movie WHERE category = :category ORDER BY releaseDate DESC")
-    fun loadCategoryMoviesPaged(category: String): PagingSource<Int, MovieEntity>
-
 //    SELECT * FROM TableName ORDER BY id OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;
 //    SELECT * FROM movie WHERE category = :category ORDER BY popularity DESC
-    @Query("SELECT * FROM movie WHERE category = :category ORDER BY popularity DESC LIMIT 20 OFFSET :number ")
+    @Query("SELECT * FROM movie WHERE category LIKE :category ORDER BY popularity DESC LIMIT 20 OFFSET :number ")
     fun loadCategoryMovies(category: String, number: Int): List<MovieEntity>
 
     @Query("SELECT * FROM movie WHERE id = :movieId")

@@ -46,6 +46,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.getAverageColor
@@ -55,13 +56,13 @@ import hiendao.moviefinder.util.shared_components.RatingBar
 @Composable
 fun MovieItemGridScreen(
     modifier: Modifier = Modifier,
-    movie: Movie,
+    media: Media,
     navigate: () -> Unit
 ) {
     val context = LocalContext.current
-    val listGenres = getGenresFromCode(movie.genreIds).joinToString(" - ") { it.name }
+    val listGenres = getGenresFromCode(media.genreIds).joinToString(" - ") { it.name }
 
-    val imageUrl = makeFullUrl(movie.posterPath)
+    val imageUrl = makeFullUrl(media.posterPath)
     val imagePainter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(context)
             .data(imageUrl)
@@ -94,12 +95,14 @@ fun MovieItemGridScreen(
                     navigate()
                 }
         ) {
-            Box(modifier = Modifier
-                .height(240.dp)
-                .fillMaxSize()
-                .padding(6.dp)) {
+            Box(
+                modifier = Modifier
+                    .height(240.dp)
+                    .fillMaxSize()
+                    .padding(6.dp)
+            ) {
 
-                when(imageState){
+                when (imageState) {
                     is AsyncImagePainter.State.Success -> {
                         val imageBitmap = imageState.result.drawable.toBitmap()
                         dominantColor = getAverageColor(imageBitmap = imageBitmap.asImageBitmap())
@@ -113,6 +116,7 @@ fun MovieItemGridScreen(
                                 .background(MaterialTheme.colorScheme.background)
                         )
                     }
+
                     is AsyncImagePainter.State.Loading -> {
                         CircularProgressIndicator(
                             color = MaterialTheme.colorScheme.primary,
@@ -122,6 +126,7 @@ fun MovieItemGridScreen(
                                 .scale(0.5f)
                         )
                     }
+
                     else -> {
                         dominantColor = MaterialTheme.colorScheme.primary
                         Icon(
@@ -142,7 +147,7 @@ fun MovieItemGridScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = movie.title,
+                text = media.title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -174,10 +179,10 @@ fun MovieItemGridScreen(
             ) {
                 RatingBar(
                     starsModifier = Modifier.size(18.dp),
-                    rating = movie.voteAverage / 2
+                    rating = media.voteAverage / 2
                 )
                 Text(
-                    text = movie.voteAverage.toString().take(3),
+                    text = media.voteAverage.toString().take(3),
                     fontWeight = FontWeight.Normal,
                     fontSize = 14.sp,
                     maxLines = 1,
@@ -193,33 +198,15 @@ fun MovieItemGridScreen(
 fun MovieItemPreview() {
     MovieFinderTheme {
         MovieItemGridScreen(
-            movie = Movie(
+            media = Media(
                 id = 1,
-                adult = false,
                 backdropPath = "",
                 genreIds = listOf(28, 12, 878),
-                originalLanguage = "en",
-                originalTitle = "Furiosa: A Mad Max Saga",
-                overview = "As the world fell, young Furiosa is snatched from the Green Place of Many Mothers and falls into the hands of a great Biker Horde led by the Warlord Dementus. Sweeping through the Wasteland they come across the Citadel presided over by The Immortan Joe. While the two Tyrants war for dominance, Furiosa must survive many trials as she puts together the means to find her way home.",
-                popularity = 6058.314,
                 posterPath = "/iADOJ8Zymht2JPMoy3R7xceZprc.jpg",
-                releaseDate = "2024-05-22",
                 title = "Furiosa: A Mad Max Saga",
-                video = false,
                 voteAverage = 7.712,
                 voteCount = 1605,
-                budget = 0,
-                homepage = "",
-                revenue = 0,
-                runtime = 0,
-                status = "Ok",
-                tagline = "",
-                productionCompany = listOf("Wanda vision", "disney"),
-                originCountry = listOf("eu"),
-                similar = listOf(1234, 1235),
-                images = listOf("asd", "asd"),
-                videos = emptyList(),
-                collectionId = 0
+                mediaType = "Movie"
             ),
             navigate = {}
         )

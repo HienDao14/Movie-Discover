@@ -48,6 +48,12 @@ val listCatalogInDiscover = listOf(
     DataItemInDiscover(null, "Revenue", "revenue.desc")
 )
 
+val listCatalogTvSeriesInDiscover = listOf(
+    DataItemInDiscover(null, "Popular", "popularity.desc"),
+    DataItemInDiscover(null, "New", "first_air_date.desc"),
+    DataItemInDiscover(null, "Featured", "vote_average.desc")
+)
+
 val listTypeInDiscover = listOf(
     DataItemInDiscover(null, "Movie", null),
     DataItemInDiscover(null, "Series", null)

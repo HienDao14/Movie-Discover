@@ -1,12 +1,10 @@
 package hiendao.moviefinder.data.repository
 
-import android.util.Log
 import hiendao.moviefinder.data.local.CreditDAO
 import hiendao.moviefinder.data.local.MovieDAO
 import hiendao.moviefinder.data.mapper.toCredit
 import hiendao.moviefinder.data.mapper.toCreditEntity
 import hiendao.moviefinder.data.mapper.toListCredit
-import hiendao.moviefinder.data.mapper.toListMovieEntity
 import hiendao.moviefinder.data.mapper.toMovieEntity
 import hiendao.moviefinder.data.network.movie.MovieApi
 import hiendao.moviefinder.domain.model.Credit
@@ -15,7 +13,6 @@ import hiendao.moviefinder.util.Category
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import java.util.Locale.filter
 import javax.inject.Inject
 
 class CommonRepositoryImp @Inject constructor(

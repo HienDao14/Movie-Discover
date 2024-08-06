@@ -3,22 +3,16 @@ package hiendao.moviefinder.presentation
 import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
-import androidx.paging.map
 import dagger.hilt.android.lifecycle.HiltViewModel
-import hiendao.moviefinder.data.mapper.toMovie
-import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.domain.repository.MovieRepository
+import hiendao.moviefinder.domain.repository.TvSeriesRepository
 import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.presentation.uiEvent.MainEvent
 import hiendao.moviefinder.util.FilterType
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MovieViewModel @Inject constructor(
     private val movieRepository: MovieRepository,
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    private val tvSeriesRepository: TvSeriesRepository
 ) : ViewModel() {
 
     private val _mainUIState = MutableStateFlow(MainUIState())
@@ -76,13 +71,17 @@ class MovieViewModel @Inject constructor(
                         _mainUIState.update {
                             it.copy(
                                 moviePage = 1,
-                                discoverMovie = emptyList(),
+                                discoverMedia = emptyList(),
                                 withGenres = event.withGenres,
                                 sortBy = event.sortBy,
                                 voteCountGte = event.voteCount
                             )
                         }
-                        discoverMovies()
+                        if(event.type == "Movie"){
+                            discoverMovies()
+                        } else {
+                            discoverTvSeries()
+                        }
                     }
                 }
             }
@@ -111,6 +110,7 @@ class MovieViewModel @Inject constructor(
             withContext(Dispatchers.IO){
                 getTopRatedMovies(isRefresh)
                 getTrendingWeekMovies(isRefresh)
+                getPopularTvSeries()
                 if(_mainUIState.value.callApiInNewDate){
                     _mainUIState.update {
                         it.copy(
@@ -309,9 +309,93 @@ class MovieViewModel @Inject constructor(
                             result.data?.let { movies ->
                                 _mainUIState.update {
                                     it.copy(
-                                        discoverMovie = it.discoverMovie + movies
+                                        discoverMedia = it.discoverMedia + movies
                                     )
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun discoverTvSeries(){
+        viewModelScope.launch {
+            withContext(Dispatchers.IO){
+                val page = _mainUIState.value.moviePage
+                val dateNow = LocalDate.now()
+                val withGenres = _mainUIState.value.withGenres
+                val sortBy = _mainUIState.value.sortBy
+                val voteCountGte = _mainUIState.value.voteCountGte
+
+                tvSeriesRepository.discoverTvSeries(
+                    firstAirDateLte = "${dateNow.year}-${dateNow.month}-${dateNow.dayOfMonth}",
+                    page = page,
+                    withGenres = withGenres,
+                    sortBy = sortBy,
+                    voteCountGte = voteCountGte
+                ).collect{result ->
+                    when (result) {
+                        is Resource.Loading -> {
+                            _mainUIState.update {
+                                it.copy(
+                                    isLoading = result.isLoading
+                                )
+                            }
+                        }
+
+                        is Resource.Error -> {
+                            _mainUIState.update {
+                                it.copy(
+                                    errorMsg = result.message
+                                )
+                            }
+                        }
+
+                        is Resource.Success -> {
+                            result.data?.let { listTvSeries ->
+                                _mainUIState.update {
+                                    it.copy(
+                                        discoverMedia = it.discoverMedia + listTvSeries
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //TvSeries
+    private fun getPopularTvSeries(){
+        viewModelScope.launch {
+            withContext(Dispatchers.IO){
+                val page = _mainUIState.value.moviePage
+                tvSeriesRepository.getPopularTvSeries(page = page).collect{result ->
+                    when(result){
+                        is Resource.Success -> {
+                            result.data?.let {list ->
+                                _mainUIState.update {
+                                    it.copy(
+                                        trendingDayTvSeries = list
+                                    )
+                                }
+                            }
+                        }
+                        is Resource.Loading -> {
+                            _mainUIState.update {
+                                it.copy(
+                                    isLoading = result.isLoading
+                                )
+                            }
+                        }
+                        is Resource.Error -> {
+                            _mainUIState.update {
+                                it.copy(
+                                    errorMsg = result.message
+                                )
                             }
                         }
                     }

@@ -18,8 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import hiendao.moviefinder.domain.model.Movie
-import hiendao.moviefinder.domain.model.TvSeries
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.shared_components.CustomImage
@@ -27,8 +26,8 @@ import hiendao.moviefinder.util.shared_components.CustomImage
 @Composable
 fun TrendingMoviesSection(
     modifier: Modifier = Modifier,
-    movies: List<Movie>,
-    listTvSeries: List<TvSeries>,
+    listMedia: List<Media>,
+    type: String,
     navHostController: NavHostController,
     title: String
 ) {
@@ -55,54 +54,37 @@ fun TrendingMoviesSection(
                 fontWeight = FontWeight.Light,
                 modifier = Modifier.clickable {
                     //Navigate to MoviesFullScreenWithPaged
-                    navHostController.navigate("${NavRoute.LISTING_SCREEN.name}?type=${Constant.moviesTrendingNowScreen}")
+                    if(type == "Movie"){
+                        navHostController.navigate("${NavRoute.LISTING_SCREEN.name}?type=${type}")
+                    } else {
+                        navHostController.navigate("${NavRoute.LISTING_SCREEN.name}?type=${type}")
+                    }
                 }
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if(movies.isNotEmpty()){
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 5.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(movies.size){index ->
-                    val movie = movies[index]
-                    CustomImage(
-                        imageUrl = movie.posterPath,
-                        width = 150.dp,
-                        height = 240.dp,
-                        onClick = {
-                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movie.id}")
-                        }
-                    )
-                }
-            }
-        } else {
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 5.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(listTvSeries.size){ index ->
-                    val tvSeries = listTvSeries[index]
-                    CustomImage(
-                        imageUrl = tvSeries.posterPath,
-                        width = 150.dp,
-                        height = 240.dp,
-                        onClick = {
-//                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${tvSeries.id}")
-                        }
-                    )
-                }
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(listMedia.size) { index ->
+                val media = listMedia[index]
+                CustomImage(
+                    imageUrl = media.posterPath,
+                    width = 150.dp,
+                    height = 240.dp,
+                    onClick = {
+                        navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${media.id}")
+                    }
+                )
             }
         }
     }
-    //Trending Day
-    //Special (Popular)
-    //Recommend (Top Rated)
 }
+//Trending Day
+//Special (Popular)
+//Recommend (Top Rated)

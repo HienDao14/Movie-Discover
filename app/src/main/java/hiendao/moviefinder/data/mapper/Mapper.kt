@@ -2,6 +2,7 @@ package hiendao.moviefinder.data.mapper
 
 import hiendao.moviefinder.data.local.model.CreditEntity
 import hiendao.moviefinder.data.local.model.MovieEntity
+import hiendao.moviefinder.data.local.model.TvSeriesEntity
 import hiendao.moviefinder.data.network.movie.model.collection.PartCollection
 import hiendao.moviefinder.data.network.movie.model.credit.Cast
 import hiendao.moviefinder.data.network.movie.model.credit.Crew
@@ -14,6 +15,7 @@ import hiendao.moviefinder.data.network.movie.model.list.MovieListResponse
 import hiendao.moviefinder.data.network.movie.model.list.MovieListWithDateResponse
 import hiendao.moviefinder.data.network.util.base_url.BaseUrl.BASE_IMAGE_URL
 import hiendao.moviefinder.domain.model.Credit
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.util.Category
 
@@ -28,7 +30,7 @@ fun MovieListWithDateResponse.toMovieListResponse(): MovieListResponse {
     )
 }
 
-fun List<MovieDTO>.toListMovieEntity(category: Category, page: Int): List<MovieEntity> {
+fun List<MovieDTO>.toListMovieEntity(category: String, page: Int): List<MovieEntity> {
     return this.mapIndexed { index, movieDTO ->
         movieDTO.toMovieEntity(category, (page - 1) * 20 + index + 1)
     }
@@ -40,7 +42,7 @@ fun List<MovieEntity>.toListMovie(): List<Movie> {
     }
 }
 
-fun MovieDTO.toMovieEntity(category: Category, index: Int): MovieEntity {
+fun MovieDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = ""): MovieEntity {
     return MovieEntity(
         id = id,
         adult = adult,
@@ -66,11 +68,13 @@ fun MovieDTO.toMovieEntity(category: Category, index: Int): MovieEntity {
         originCountry = "",
         similar = "",
         images = "",
-        category = category.name,
+        category = category,
         categoryIndex = index,
         videos = "",
         collectionId = -1,
-        credits = ""
+        credits = "",
+        addedToFavorite = favorite,
+        addedInFavoriteDate = favoriteDate
     )
 }
 
@@ -115,7 +119,7 @@ fun MovieEntity.toMovie(): Movie {
     )
 }
 
-fun MovieDetailDTO.toMovieEntity(category: String, index: Int): MovieEntity {
+fun MovieDetailDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = ""): MovieEntity {
     return MovieEntity(
         id = id,
         adult = adult,
@@ -146,7 +150,9 @@ fun MovieDetailDTO.toMovieEntity(category: String, index: Int): MovieEntity {
         categoryIndex = index,
         videos = videos.results.joinToString(",") { it.key },
         collectionId = belongs_to_collection?.id ?: -1,
-        credits = ""
+        credits = "",
+        addedToFavorite = favorite,
+        addedInFavoriteDate = favoriteDate
     )
 }
 
@@ -275,6 +281,59 @@ fun PartCollection.toMovie(): Movie {
         images = emptyList(),
         videos = emptyList(),
         collectionId = -1,
+        mediaType = media_type
+    )
+}
+
+fun PartCollection.toTvSeriesEntity(): TvSeriesEntity{
+    return TvSeriesEntity(
+        adult = adult ?: false,
+        backdropPath = backdrop_path ?: "",
+        createdBy = "",
+        credits = "",
+        episodeRuntime = "",
+        firstAirDate = release_date ?: "",
+        genres = genre_ids.joinToString(",") { it.toString() } ?: "",
+        homepage = "",
+        id = id,
+        images = "",
+        inProduction = false,
+        languages = "",
+        lastAirDate = "",
+        lastEpisodeToAir = "",
+        name = title ?: "",
+        networks = "",
+        nextEpisodeToAir = "",
+        numberOfEpisodes = 0,
+        numberOfSeasons = 0,
+        originCountry = "",
+        originalLanguage = original_language ?: "",
+        originalName = original_title ?: "",
+        overview = overview ?: "",
+        popularity = popularity ?: 0.0,
+        posterPath = poster_path ?: "",
+        productionCompanies = "",
+        productionCountries = "",
+        seasons = "",
+        spokenLanguages = "",
+        status = "",
+        tagline = "",
+        type = "",
+        videos = "",
+        voteAverage = vote_average ?: 0.0,
+        voteCount = vote_count ?: 0
+    )
+}
+
+fun PartCollection.toMedia(): Media{
+    return Media(
+        id = id,
+        title = title,
+        posterPath = poster_path ?: "",
+        backdropPath = backdrop_path ?: "",
+        genreIds = genre_ids,
+        voteAverage = vote_average,
+        voteCount = vote_count,
         mediaType = media_type
     )
 }
@@ -511,5 +570,37 @@ fun CreditEntity.toCredit(): Credit {
 fun List<CreditEntity>.toListCredit(): List<Credit> {
     return this.map {
         it.toCredit()
+    }
+}
+
+fun MovieDTO.toMedia(): Media{
+    return Media(
+        id = id,
+        title = title,
+        posterPath = poster_path ?: "",
+        backdropPath = backdrop_path ?: "",
+        genreIds = genre_ids,
+        voteAverage = vote_average,
+        voteCount = vote_count,
+        mediaType = "Movie"
+    )
+}
+
+fun Movie.toMedia(): Media{
+    return Media(
+        id = id,
+        title = title,
+        posterPath = posterPath,
+        backdropPath = backdropPath,
+        genreIds = genreIds,
+        voteAverage = voteAverage,
+        voteCount = voteCount,
+        mediaType = "Movie"
+    )
+}
+
+fun List<Movie>.toListMedia(): List<Media>{
+    return this.map {
+        it.toMedia()
     }
 }

@@ -29,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import hiendao.moviefinder.util.DataItemInDiscover
 import hiendao.moviefinder.util.listCatalogInDiscover
+import hiendao.moviefinder.util.listCatalogTvSeriesInDiscover
 import hiendao.moviefinder.util.listGenresInDiscover
 import hiendao.moviefinder.util.listTypeInDiscover
 
@@ -36,6 +37,7 @@ import hiendao.moviefinder.util.listTypeInDiscover
 @Composable
 fun ChooseTypeDiscover(
     modifier: Modifier = Modifier,
+    isMovie: Boolean,
     type: String,
     setShowDialog: (Boolean) -> Unit,
     setInfo: (DataItemInDiscover, Int) -> Unit,
@@ -43,7 +45,11 @@ fun ChooseTypeDiscover(
 ) {
     val listItem = when (type) {
         "Type" -> listTypeInDiscover
-        "Catalog" -> listCatalogInDiscover
+        "Catalog" -> {
+            if(isMovie){
+                listCatalogInDiscover
+            } else listCatalogTvSeriesInDiscover
+        }
         else -> listGenresInDiscover
     }
 

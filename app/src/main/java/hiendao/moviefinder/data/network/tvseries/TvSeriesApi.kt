@@ -11,19 +11,16 @@ interface TvSeriesApi {
     //TV Series API
     @GET("tv/popular")
     suspend fun getPopularTvSeries(
-        @Query("language") language: String?,
         @Query("page") page: Int?
     ): TvSeriesListResponse
 
     @GET("tv/airing_today")
     suspend fun getAiringTodayTvSeries(
-        @Query("language") language: String?,
         @Query("page") page: Int?
     ): TvSeriesListResponse
 
     @GET("tv/top_rated")
     suspend fun getTopRatedTvSeries(
-        @Query("language") language: String?,
         @Query("page") page: Int?
     ): TvSeriesListResponse
 
@@ -43,4 +40,13 @@ interface TvSeriesApi {
         @Path("series_id") seriesId: Int,
         @Path("season_number") seasonNumber: Int
     ): SeasonDTO
+
+    @GET("discover/tv")
+    suspend fun getTvSeriesDiscover(
+        @Query("first_air_date.lte") firstAirDateLte: String,
+        @Query("page") page: Int = 1,
+        @Query("with_genres") withGenres: String?,
+        @Query("sort_by") sortBy: String,
+        @Query("vote_count.gte") voteCountGte: Float?
+    ): TvSeriesListResponse
 }

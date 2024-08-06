@@ -14,13 +14,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -29,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.presentation.discover.ChooseTypeDiscover
 import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.presentation.uiEvent.MainEvent
@@ -85,6 +82,7 @@ fun DiscoverScreen(
     LaunchedEffect(true) {
         onEvent(
             MainEvent.StartDiscover(
+                type = textForType.value,
                 sortBy = catalogQuery.value,
                 voteCount = 1000f,
                 withGenres = if (genresQuery.intValue == -1) null else genresQuery.intValue.toString()
@@ -98,6 +96,7 @@ fun DiscoverScreen(
     ) {
         if (showDialog.value) {
             ChooseTypeDiscover(
+                isMovie = textForType.value == "Movie",
                 type = typeForDialog.value,
                 setShowDialog = {
                     showDialog.value = it
@@ -127,6 +126,7 @@ fun DiscoverScreen(
                     println("Call api info: ${catalogQuery.value} and ${genresQuery.intValue}")
                     onEvent(
                         MainEvent.StartDiscover(
+                            type = textForType.value,
                             sortBy = catalogQuery.value,
                             voteCount = 1000f,
                             withGenres = if (genresQuery.intValue == -1) null else genresQuery.intValue.toString()
@@ -212,7 +212,7 @@ fun DiscoverScreen(
             }
         }
 
-        val listDiscoverMovie = uiState.discoverMovie
+        val listDiscoverMovie = uiState.discoverMedia
 
         if (listDiscoverMovie.isNotEmpty()) {
             LazyVerticalGrid(

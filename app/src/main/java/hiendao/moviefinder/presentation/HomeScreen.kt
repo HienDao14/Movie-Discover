@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import hiendao.moviefinder.data.mapper.toListMedia
 import hiendao.moviefinder.presentation.movie.TrendingMoviesSection
 import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.presentation.uiEvent.MainEvent
@@ -87,20 +88,27 @@ fun HomeScreen(
                         //Popular Movies
                         AutoSwipeSection(
                             sectionType = "Movies - Top Rated",
-                            movies = uiState.popularMovies,
+                            listMedia = uiState.popularMovies.toListMedia(),
                             navHostController = navHostController
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
 
                         TrendingMoviesSection(
-                            movies = uiState.trendingWeekMovies,
-                            listTvSeries = emptyList(),
+                            listMedia = uiState.trendingWeekMovies.toListMedia(),
                             navHostController = navHostController,
-                            title = "Movies - Trending Now"
+                            title = "Movies - Trending Now",
+                            type = "Movie"
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
+
+                        TrendingMoviesSection(
+                            listMedia = uiState.trendingDayTvSeries.toListMedia(),
+                            navHostController = navHostController,
+                            title = "Tv Series - Popular",
+                            type = "TvSeries"
+                        )
                     }
                 }
             }
