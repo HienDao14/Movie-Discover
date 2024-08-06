@@ -35,7 +35,6 @@ import hiendao.moviefinder.presentation.favorite.FavoriteViewModel
 import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailScreen
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailViewModel
-import hiendao.moviefinder.presentation.state.FavoriteState
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
@@ -100,9 +99,9 @@ fun Navigation(
         ) {entry ->
             val type = entry.arguments?.getString("type")
             requireNotNull(type)
-            if(type == Constant.moviesTrendingNowScreen){
+            if(type == "Movie"){
                 MoviesFullScreenWithPaged(
-                    title = type,
+                    type = type,
                     navHostController = navController,
                     uiState = mainUIState,
                     onEvent = mainViewModel::onEvent

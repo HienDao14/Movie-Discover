@@ -52,6 +52,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -59,7 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AutoSwipePager(
     modifier: Modifier = Modifier,
-    movies: List<Movie>,
+    movies: List<Media>,
     navigate: (Int) -> Unit
 ) {
     val pagerState = rememberPagerState(

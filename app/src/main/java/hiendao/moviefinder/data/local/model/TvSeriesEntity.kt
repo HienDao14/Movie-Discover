@@ -1,5 +1,10 @@
 package hiendao.moviefinder.data.local.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import hiendao.moviefinder.util.Category
+
+@Entity(tableName = "tv_series")
 data class TvSeriesEntity(
     val adult: Boolean,
     val backdropPath: String,
@@ -9,6 +14,7 @@ data class TvSeriesEntity(
     val firstAirDate: String,
     val genres: String,
     val homepage: String,
+    @PrimaryKey
     val id: Int,
     val images: String,
     val inProduction: Boolean,
@@ -35,5 +41,8 @@ data class TvSeriesEntity(
     val type: String,
     val videos: String,
     val voteAverage: Double,
-    val voteCount: Int
+    val voteCount: Int,
+    val category: String = Category.MOVIE.name,
+    val addedToFavorite: Int = 0,
+    val addedInFavoriteDate: String = ""
 )

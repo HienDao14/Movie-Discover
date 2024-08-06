@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import hiendao.moviefinder.data.mapper.toListMedia
 import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.presentation.uiEvent.MainEvent
 import hiendao.moviefinder.util.FilterType
@@ -59,7 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MoviesFullScreenWithPaged(
     modifier: Modifier = Modifier,
-    title: String,
+    type: String,
     navHostController: NavHostController,
     uiState: MainUIState,
     onEvent: (MainEvent) -> Unit
@@ -224,25 +225,24 @@ fun MoviesFullScreenWithPaged(
                             color = Color.White
                         )
                     }
-                    val listMovies =
-                        if (filter.value == FilterType.TRENDING_DAY) uiState.trendingDayMovies else uiState.trendingWeekMovies
-                    if (listMovies.isNotEmpty()) {
-
+                    val listMedia =
+                        if (filter.value == FilterType.TRENDING_DAY) uiState.trendingDayMovies.toListMedia() else uiState.trendingWeekMovies.toListMedia()
+                    if (listMedia.isNotEmpty()) {
                         if (listingType.value == ListingType.GRID) {
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(2),
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                items(listMovies.size) { index ->
-                                    val movie = listMovies[index]
+                                items(listMedia.size) { index ->
+                                    val media = listMedia[index]
                                     MovieItemGridScreen(
-                                        movie = movie,
+                                        media = media,
                                         navigate = {
-                                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movie.id}")
+                                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${media.id}")
                                         })
 
-                                    if (index >= listMovies.size - 1 && !uiState.isLoading) {
+                                    if (index >= listMedia.size - 1 && !uiState.isLoading) {
                                         onEvent(MainEvent.OnPaginate(filter.value.name))
                                     }
                                 }
@@ -252,16 +252,16 @@ fun MoviesFullScreenWithPaged(
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                items(listMovies.size) { index ->
-                                    val movie = listMovies[index]
+                                items(listMedia.size) { index ->
+                                    val media = listMedia[index]
                                     MovieItemColumnScreen(
-                                        movie = movie,
+                                        media = media,
                                         navigate = {
-                                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${movie.id}")
+                                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${media.id}")
                                         }
                                     )
 
-                                    if (index >= listMovies.size - 1 && !uiState.isLoading) {
+                                    if (index >= listMedia.size - 1 && !uiState.isLoading) {
                                         onEvent(MainEvent.OnPaginate(filter.value.name))
                                     }
                                 }

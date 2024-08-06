@@ -1,11 +1,10 @@
 package hiendao.moviefinder.presentation.state
 
 import androidx.paging.PagingData
-import androidx.paging.compose.LazyPagingItems
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.domain.model.TvSeries
 import kotlinx.coroutines.flow.Flow
-import java.time.LocalDate
 
 data class MainUIState(
     val isLoading: Boolean = false,
@@ -18,7 +17,7 @@ data class MainUIState(
     val topRatedMovies: List<Movie> = emptyList(),
 
     //Discover
-    val discoverMovie: List<Movie> = emptyList(),
+    val discoverMedia: List<Media> = emptyList(),
     val withGenres: String? = null,
     val sortBy: String = "popularity.desc",
     val voteCountGte: Float? = 0f,

@@ -8,6 +8,6 @@ sealed class MainEvent {
 
     data class StartLoad(val type: String) : MainEvent()
 
-    data class StartDiscover(val sortBy: String, val voteCount: Float?, val withGenres: String?): MainEvent()
+    data class StartDiscover(val type: String, val sortBy: String, val voteCount: Float?, val withGenres: String?): MainEvent()
 
 }

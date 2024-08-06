@@ -43,14 +43,15 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
 
 @Composable
 fun RecommendationSection(
     modifier: Modifier = Modifier,
     movie: Movie,
-    collections: List<Movie>,
-    similar: List<Movie>,
+    collections: List<Media>,
+    similar: List<Media>,
     navigate: (Int) -> Unit
 ) {
     Column(
@@ -68,7 +69,7 @@ fun RecommendationSection(
             ) {
                 items(collections.size){index ->
                     val movieCollection = collections[index]
-                    RecommendationItem(movie = movieCollection, navigate = {navigate(it)})
+                    RecommendationItem(media = movieCollection, navigate = {navigate(it)})
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -85,7 +86,7 @@ fun RecommendationSection(
             ) {
                 items(similar.size){index ->
                     val movieSimilar = similar[index]
-                    RecommendationItem(movie = movieSimilar, navigate = {navigate(it)})
+                    RecommendationItem(media = movieSimilar, navigate = {navigate(it)})
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -96,7 +97,7 @@ fun RecommendationSection(
 @Composable
 fun RecommendationItem(
     modifier: Modifier = Modifier,
-    movie: Movie,
+    media: Media,
     navigate: (Int) -> Unit
 ) {
 
@@ -104,7 +105,7 @@ fun RecommendationItem(
 
     val imagePainter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(context)
-            .data(makeFullUrl(movie.posterPath))
+            .data(makeFullUrl(media.posterPath))
             .size(Size.ORIGINAL)
             .build()
     )
@@ -114,7 +115,7 @@ fun RecommendationItem(
         modifier = Modifier
             .width(120.dp)
             .clickable {
-                navigate(movie.id)
+                navigate(media.id)
             }
     ) {
 
@@ -165,7 +166,7 @@ fun RecommendationItem(
         }
 
         Text(
-            text = movie.title,
+            text = media.title,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             fontSize = 12.sp,
@@ -174,9 +175,9 @@ fun RecommendationItem(
 
         Spacer(modifier = Modifier.height(5.dp))
 
-        if(movie.mediaType != null){
+        if(media.mediaType != null){
             Text(
-                text = movie.mediaType,
+                text = media.mediaType,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 12.sp,

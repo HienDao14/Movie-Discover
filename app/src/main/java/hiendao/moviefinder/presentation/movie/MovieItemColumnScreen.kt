@@ -48,6 +48,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.util.getAverageColor
 import hiendao.moviefinder.util.convert.getGenresFromCode
@@ -56,17 +57,17 @@ import kotlin.math.roundToInt
 @Composable
 fun MovieItemColumnScreen(
     modifier: Modifier = Modifier,
-    movie: Movie,
+    media: Media,
     navigate: () -> Unit
 ) {
 
     val context = LocalContext.current
 
-    val listGenres = getGenresFromCode(movie.genreIds).joinToString(" - ") { it.name }
+    val listGenres = getGenresFromCode(media.genreIds).joinToString(" - ") { it.name }
 
     val imagePainter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(context)
-            .data(makeFullUrl(movie.posterPath))
+            .data(makeFullUrl(media.posterPath))
             .size(Size.ORIGINAL)
             .build()
 
@@ -151,7 +152,7 @@ fun MovieItemColumnScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = movie.title,
+                text = media.title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
@@ -170,7 +171,7 @@ fun MovieItemColumnScreen(
                 )
                 Spacer(modifier = Modifier.width(5.dp))
                 Text(
-                    text = "${(movie.voteAverage * 10).roundToInt()}%",
+                    text = "${(media.voteAverage * 10).roundToInt()}%",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White
@@ -184,7 +185,7 @@ fun MovieItemColumnScreen(
                 )
                 Spacer(modifier = Modifier.width(5.dp))
                 Text(
-                    text = "${movie.voteCount}",
+                    text = "${media.voteCount}",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White
