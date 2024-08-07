@@ -34,6 +34,8 @@ data class TvSeries(
     val tagline: String,
     val type: String,
     val videos: List<String>,
+    val similar: List<Int>,
     val voteAverage: Double,
-    val voteCount: Int
+    val voteCount: Int,
+    val addedToFavorite: Boolean = false,
 )

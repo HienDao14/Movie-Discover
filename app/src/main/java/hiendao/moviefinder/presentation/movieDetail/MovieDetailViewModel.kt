@@ -1,6 +1,5 @@
 package hiendao.moviefinder.presentation.movieDetail
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -129,7 +128,7 @@ class MovieDetailViewModel @Inject constructor(
     ){
         viewModelScope.launch {
             withContext(Dispatchers.IO){
-                movieRepository.getSimilarMovies(movieId).collect{result ->
+                commonRepository.getSimilarMovies(id = movieId).collect{ result ->
                     when(result){
                         is Resource.Loading -> {
                             _movieDetailState.update {
@@ -211,11 +210,10 @@ class MovieDetailViewModel @Inject constructor(
     ){
         viewModelScope.launch {
             withContext(Dispatchers.IO){
-                commonRepository.getCredits(movieId).collect{result ->
+                commonRepository.getCredits("Movie", movieId).collect{result ->
                     when(result){
                         is Resource.Success -> {
                             result.data?.let {credits ->
-                                Log.d("credit data before update", credits.joinToString(","){it.name})
                                 _movieDetailState.update {
                                     it.copy(
                                         listCredit = credits

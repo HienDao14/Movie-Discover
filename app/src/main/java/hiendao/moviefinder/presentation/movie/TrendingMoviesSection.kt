@@ -78,7 +78,11 @@ fun TrendingMoviesSection(
                     width = 150.dp,
                     height = 240.dp,
                     onClick = {
-                        navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${media.id}")
+                        if(type == "Movie"){
+                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${media.id}")
+                        } else {
+                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?seriesId=${media.id}")
+                        }
                     }
                 )
             }

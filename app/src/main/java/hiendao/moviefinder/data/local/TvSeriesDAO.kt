@@ -4,9 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import hiendao.moviefinder.data.local.model.MovieEntity
 import hiendao.moviefinder.data.local.model.TvSeriesEntity
-import hiendao.moviefinder.domain.model.TvSeries
 
 @Dao
 interface TvSeriesDAO {
@@ -29,4 +27,6 @@ interface TvSeriesDAO {
     @Query("SELECT * FROM tv_series WHERE addedToFavorite = 1 ORDER BY addedInFavoriteDate DESC LIMIT 20 OFFSET :number")
     fun getFavoriteTvSeries(number: Int): List<TvSeriesEntity>
 
+    @Query("UPDATE tv_series SET credits = :credit WHERE id = :id")
+    suspend fun updateCredits(credit: String, id: Int)
 }

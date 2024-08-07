@@ -49,7 +49,6 @@ import hiendao.moviefinder.domain.model.Movie
 @Composable
 fun RecommendationSection(
     modifier: Modifier = Modifier,
-    movie: Movie,
     collections: List<Media>,
     similar: List<Media>,
     navigate: (Int) -> Unit
@@ -175,15 +174,12 @@ fun RecommendationItem(
 
         Spacer(modifier = Modifier.height(5.dp))
 
-        if(media.mediaType != null){
-            Text(
-                text = media.mediaType,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 12.sp,
-                fontStyle = FontStyle.Italic
-            )
-
-        }
+        Text(
+            text = media.mediaType,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            fontSize = 12.sp,
+            fontStyle = FontStyle.Italic
+        )
     }
 }

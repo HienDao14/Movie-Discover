@@ -35,6 +35,12 @@ fun ImageSection(
         backdrops.addAll(images[1].split(","))
     }
 
+    println("Images Poster: ${images[0]}")
+    println("Images Poster: ${posters}")
+
+    println("Images Poster Back: ${images[1]}")
+    println("Images Poster Back: ${backdrops}")
+
     Column(
         modifier = modifier
             .fillMaxWidth()

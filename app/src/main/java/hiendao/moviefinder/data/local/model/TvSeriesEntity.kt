@@ -40,6 +40,7 @@ data class TvSeriesEntity(
     val tagline: String,
     val type: String,
     val videos: String,
+    val similar: String,
     val voteAverage: Double,
     val voteCount: Int,
     val category: String = Category.MOVIE.name,

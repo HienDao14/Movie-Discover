@@ -35,8 +35,9 @@ import hiendao.moviefinder.presentation.favorite.FavoriteViewModel
 import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailScreen
 import hiendao.moviefinder.presentation.movieDetail.MovieDetailViewModel
+import hiendao.moviefinder.presentation.tvSeriesDetail.SeriesDetailViewModel
+import hiendao.moviefinder.presentation.tvSeriesDetail.TvSeriesDetailScreen
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
-import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
 import kotlinx.coroutines.delay
 
@@ -65,12 +66,14 @@ fun Navigation(
     val navController = rememberNavController()
 
     val mainViewModel = hiltViewModel<MovieViewModel>()
-    val detailViewModel = hiltViewModel<MovieDetailViewModel>()
+    val movieDetailViewModel = hiltViewModel<MovieDetailViewModel>()
+    val seriesDetailViewModel = hiltViewModel<SeriesDetailViewModel>()
     val creditViewModel = hiltViewModel<CreditViewModel>()
     val favoriteViewModel = hiltViewModel<FavoriteViewModel>()
 
     val mainUIState = mainViewModel.mainUIState.collectAsState().value
-    val detailState = detailViewModel.movieDetailState.collectAsState().value
+    val movieDetailState = movieDetailViewModel.movieDetailState.collectAsState().value
+    val seriesDetailState = seriesDetailViewModel.seriesState.collectAsState().value
     val creditState = creditViewModel.creditState.collectAsState().value
     val favoriteScreenState = favoriteViewModel.favoriteState.collectAsState().value
 
@@ -121,19 +124,19 @@ fun Navigation(
             requireNotNull(movieId)
 
             LaunchedEffect(key1 = true) {
-                detailViewModel.reload()
-                detailViewModel.load(movieId.toInt())
+                movieDetailViewModel.reload()
+                movieDetailViewModel.load(movieId.toInt())
                 delay(500)
             }
 
-            if(detailState.movie != null && detailState.movie.images.isNotEmpty() && detailState.listCredit.isNotEmpty()){
+            if(movieDetailState.movie != null && movieDetailState.movie.images.isNotEmpty() && movieDetailState.listCredit.isNotEmpty()){
                 MovieDetailScreen(
-                    movie = detailState.movie,
-                    detailState = detailState,
+                    movie = movieDetailState.movie,
+                    detailState = movieDetailState,
                     navHostController = navController,
-                    onEvent = detailViewModel::onEvent
+                    onEvent = movieDetailViewModel::onEvent
                 )
-            } else if(detailState.isLoading){
+            } else if(movieDetailState.isLoading){
                 Box(modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surface),
@@ -145,7 +148,60 @@ fun Navigation(
                     )
                 }
             }
-            else if(detailState.errorMsg != "") {
+            else if(movieDetailState.errorMsg != "") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Something went wrong",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 19.sp
+                    )
+                }
+            }
+        }
+
+        composable(
+            route = "${NavRoute.DETAIL_SCREEN}?seriesId={seriesId}",
+            arguments = listOf(
+                navArgument(name = "seriesId"){
+                    type = NavType.StringType
+                }
+            )
+        ) {entry ->
+            val seriesId = entry.arguments?.getString("seriesId")
+            requireNotNull(seriesId)
+
+            LaunchedEffect(key1 = true) {
+                seriesDetailViewModel.reload()
+                seriesDetailViewModel.load(id = seriesId.toInt())
+                delay(500)
+            }
+
+            if(seriesDetailState.series != null && seriesDetailState.series.images.isNotEmpty() && seriesDetailState.credits.isNotEmpty()){
+                //Series Screen Detail
+                TvSeriesDetailScreen(
+                    series = seriesDetailState.series,
+                    seriesDetailState = seriesDetailState,
+                    navHostController = navController
+                )
+            } else if(movieDetailState.isLoading){
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ){
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
+            }
+            else if(movieDetailState.errorMsg != "") {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

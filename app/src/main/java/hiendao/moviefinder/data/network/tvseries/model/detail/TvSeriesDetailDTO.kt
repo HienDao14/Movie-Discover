@@ -1,5 +1,6 @@
 package hiendao.moviefinder.data.network.tvseries.model.detail
 
+
 data class TvSeriesDetailDTO(
     val adult: Boolean?,
     val backdrop_path: String?,
@@ -35,5 +36,6 @@ data class TvSeriesDetailDTO(
     val type: String?,
     val videos: Videos?,
     val vote_average: Double?,
-    val vote_count: Int?
+    val vote_count: Int?,
+    val similar: Similar?
 )

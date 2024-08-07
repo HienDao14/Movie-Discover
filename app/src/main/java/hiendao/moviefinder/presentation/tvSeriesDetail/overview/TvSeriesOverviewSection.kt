@@ -1,9 +1,7 @@
-package hiendao.moviefinder.presentation.movieDetail.overview
+package hiendao.moviefinder.presentation.tvSeriesDetail.overview
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,28 +13,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import hiendao.moviefinder.domain.model.Movie
+import hiendao.moviefinder.domain.model.TvSeries
 import hiendao.moviefinder.util.convert.ConvertToMillion
 import hiendao.moviefinder.util.shared_components.RowInfoSection
 
-
 @Composable
-fun OverviewSection(
+fun TvSeriesOverviewSection(
     modifier: Modifier = Modifier,
-    movie: Movie
+    series: TvSeries
 ) {
     var overviewExpanded by remember {
         mutableStateOf(false)
@@ -47,45 +43,44 @@ fun OverviewSection(
             .fillMaxWidth()
             .padding(top = 8.dp)
     ) {
-
         RowInfoSection(
             modifier = Modifier.fillMaxWidth(),
             label = "User score",
-            info = "${movie.voteAverage} / 10",
+            info = "${series.voteAverage} / 10",
             infoColor = MaterialTheme.colorScheme.primary
         )
 
         RowInfoSection(
             modifier = Modifier.fillMaxWidth(),
             label = "Status",
-            info = movie.status,
-            infoColor = if (movie.status == "Released") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+            info = series.status,
+            infoColor = if (series.status == "Released") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
         )
 
         RowInfoSection(
             modifier = Modifier.fillMaxWidth(),
-            label = "Release Date",
-            info = movie.releaseDate,
+            label = "First Air Date",
+            info = series.firstAirDate,
             null
         )
 
         RowInfoSection(
             modifier = Modifier.fillMaxWidth(),
-            label = "Budget",
-            info = movie.budget.toLong().ConvertToMillion(),
+            label = "Number of Seasons",
+            info = series.numberOfSeasons.toString(),
             null
         )
 
         RowInfoSection(
             modifier = Modifier.fillMaxWidth(),
-            label = "Revenue",
-            info = movie.revenue.ConvertToMillion(),
-            if (movie.revenue > movie.budget) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+            label = "Number of episodes",
+            info = series.numberOfEpisodes.toString(),
+            null
         )
 
-        if (movie.tagline != "") {
+        if (series.tagline != "") {
             Text(
-                text = "\"${movie.tagline}\"",
+                text = "\"${series.tagline}\"",
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
                 fontStyle = FontStyle.Italic,
@@ -107,7 +102,7 @@ fun OverviewSection(
                 text = buildAnnotatedString {
                     append(
                         AnnotatedString(
-                            text = movie.overview,
+                            text = series.overview,
                             paragraphStyle = ParagraphStyle(
                                 textIndent = TextIndent(firstLine = 20.sp, restLine = 0.sp)
                             )
@@ -118,6 +113,9 @@ fun OverviewSection(
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier.clickable {
                     overviewExpanded = false
+                },
+                onTextLayout = {
+
                 }
             )
 
@@ -127,7 +125,7 @@ fun OverviewSection(
                 text = buildAnnotatedString {
                     append(
                         AnnotatedString(
-                            text = movie.overview,
+                            text = series.overview,
                             paragraphStyle = ParagraphStyle(
                                 textIndent = TextIndent(firstLine = 20.sp, restLine = 0.sp)
                             )
@@ -141,7 +139,10 @@ fun OverviewSection(
                 modifier = Modifier.clickable {
                     overviewExpanded = true
                 }
+
             )
         }
+
     }
+
 }

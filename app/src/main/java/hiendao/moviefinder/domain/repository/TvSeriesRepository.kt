@@ -18,4 +18,9 @@ interface TvSeriesRepository {
         sortBy: String,
         voteCountGte: Float?
     ): Flow<Resource<List<Media>>>
+
+    suspend fun getTvSeriesDetail(
+        isRefresh: Boolean,
+        id: Int
+    ): Flow<Resource<TvSeries>>
 }

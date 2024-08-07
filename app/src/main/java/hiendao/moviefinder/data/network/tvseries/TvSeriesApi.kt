@@ -1,5 +1,6 @@
 package hiendao.moviefinder.data.network.tvseries
 
+import hiendao.moviefinder.data.network.movie.model.credit.Credits
 import hiendao.moviefinder.data.network.tvseries.model.detail.TvSeriesDetailDTO
 import hiendao.moviefinder.data.network.tvseries.model.list.TvSeriesListResponse
 import hiendao.moviefinder.data.network.tvseries.model.season.SeasonDTO
@@ -32,7 +33,7 @@ interface TvSeriesApi {
     @GET("tv/{series_id}")
     suspend fun getTvSeriesDetail(
         @Path("series_id") seriesId: Int,
-        @Query("append_to_response") append: String? = "credits"
+        @Query("append_to_response") append: String? = "credits,images,videos,similar"
     ): TvSeriesDetailDTO
 
     @GET("tv/{series_id}/season/{season_number}")
@@ -49,4 +50,9 @@ interface TvSeriesApi {
         @Query("sort_by") sortBy: String,
         @Query("vote_count.gte") voteCountGte: Float?
     ): TvSeriesListResponse
+
+    @GET("tv/{series_id}/credits")
+    suspend fun getCredits(
+        @Path("series_id") seriesId: Int
+    ): Credits
 }

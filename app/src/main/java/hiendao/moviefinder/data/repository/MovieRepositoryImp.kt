@@ -497,7 +497,7 @@ class MovieRepositoryImp @Inject constructor(
                                     if (it.category.contains(Category.MOVIE.name)) it.category
                                     else it.category + Category.MOVIE.name
                                 movieDAO.upsertMovie(
-                                    movie.toMovieEntity(
+                                    movieDTO.toMovieEntity(
                                         category = category,
                                         index = -1,
                                         favorite = it.addedToFavorite,
@@ -505,7 +505,7 @@ class MovieRepositoryImp @Inject constructor(
                                     )
                                 )
                             } ?: movieDAO.upsertMovie(
-                                movie.toMovieEntity(
+                                movieDTO.toMovieEntity(
                                     category = Category.MOVIE.name,
                                     index = -1
                                 )
@@ -513,6 +513,26 @@ class MovieRepositoryImp @Inject constructor(
                         }
                     }
                 }
+
+                val entity = movieDAO.getMovieWithId(movie.id)
+                entity?.let {
+                    val category =
+                        if (it.category.contains(Category.MOVIE.name)) it.category
+                        else it.category + Category.MOVIE.name
+                    movieDAO.upsertMovie(
+                        movie.toMovieEntity(
+                            category = category,
+                            index = -1,
+                            favorite = it.addedToFavorite,
+                            favoriteDate = it.addedInFavoriteDate
+                        )
+                    )
+                } ?: movieDAO.upsertMovie(
+                    movie.toMovieEntity(
+                        category = Category.MOVIE.name,
+                        index = -1
+                    )
+                )
 
                 val movieResult = movie.toMovie()
 
@@ -525,74 +545,6 @@ class MovieRepositoryImp @Inject constructor(
                 emit(Resource.Loading(false))
                 return@flow
             }
-        }
-    }
-
-    override suspend fun getSimilarMovies(movieId: Int): Flow<Resource<List<Media>>> {
-        return flow {
-            emit(Resource.Loading())
-
-            val localMovie = movieDAO.getMovieWithId(movieId)
-            if (localMovie != null && localMovie.similar != "") {
-                val similarIds = localMovie.similar.split(",")
-                val similarMovies = mutableListOf<Media>()
-                similarIds.forEach { id ->
-                    val movie = movieDAO.getMovieWithId(id.toInt())
-                    movie?.let {
-                        similarMovies.add(it.toMovie().toMedia())
-                    }
-                }
-
-                emit(Resource.Success(similarMovies))
-                emit(Resource.Loading(false))
-                return@flow
-            }
-
-            val remoteMovie = try {
-                movieApi.getMovieDetailInfo(
-                    movieId
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-                emit(Resource.Error("Couldn't load data"))
-                emit(Resource.Loading(false))
-                return@flow
-            }
-
-            remoteMovie.similar?.results?.let { listSimilar ->
-                listSimilar.mapIndexed { index, movieDTO ->
-
-                    if (movieDTO.backdrop_path != null && movieDTO.poster_path != null) {
-                        val entity = movieDAO.getMovieWithId(movieDTO.id)
-                        entity?.let {
-                            val category =
-                                if (it.category.contains(Category.MOVIE.name)) it.category
-                                else it.category + Category.MOVIE.name
-                            movieDAO.upsertMovie(
-                                movieDTO.toMovieEntity(
-                                    category = category,
-                                    index = -1,
-                                    favorite = it.addedToFavorite,
-                                    favoriteDate = it.addedInFavoriteDate
-                                )
-                            )
-                        } ?: movieDAO.upsertMovie(
-                            movieDTO.toMovieEntity(
-                                category = Category.MOVIE.name,
-                                index = -1
-                            )
-                        )
-                    }
-                }
-                val similarMovies = listSimilar.map { it.toMovie().toMedia() }
-                emit(Resource.Success(similarMovies))
-                emit(Resource.Loading(false))
-                return@flow
-            }
-
-            emit(Resource.Error("Couldn't load data"))
-            emit(Resource.Loading(false))
-            return@flow
         }
     }
 

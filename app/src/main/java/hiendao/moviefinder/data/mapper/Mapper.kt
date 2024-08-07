@@ -181,7 +181,7 @@ fun MovieDetailDTO.toMovie(): Movie {
         productionCompany = production_companies.map { it.name },
         originCountry = origin_country,
         similar = similar?.results?.map { it.id } ?: emptyList(),
-        images = images?.posters?.map { it.file_path }?.plus(images.backdrops.map { it.file_path }) ?: emptyList(),
+        images = listOf(images?.posters?.joinToString(",") { it.file_path } ?: "", images?.backdrops?.joinToString(",") { it.file_path } ?: "") ,
         videos = videos.results.map { it.key },
         collectionId = belongs_to_collection?.id ?: -1
     )
@@ -320,6 +320,7 @@ fun PartCollection.toTvSeriesEntity(): TvSeriesEntity{
         tagline = "",
         type = "",
         videos = "",
+        similar = "",
         voteAverage = vote_average ?: 0.0,
         voteCount = vote_count ?: 0
     )

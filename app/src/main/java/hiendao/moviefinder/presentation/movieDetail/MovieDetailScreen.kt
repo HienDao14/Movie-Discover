@@ -188,7 +188,7 @@ fun MovieDetailScreen(
                 imageUriToShow = uri
                 imageTitleToShow = title
             },
-            changeFavoriteClick = {favorite, date, movieId ->
+            changeFavoriteClick = { favorite, date, movieId ->
                 onEvent(MovieDetailEvent.AddToFavorite(favorite, date, movieId))
             }
         )
@@ -323,14 +323,11 @@ fun MovieDetailSection(
         ) { page ->
             when (page) {
                 0 -> {
-                    Column {
-                        OverviewSection(movie = movie, modifier = Modifier.fillMaxWidth())
-                    }
+                    OverviewSection(movie = movie, modifier = Modifier.fillMaxWidth())
                 }
 
                 1 -> {
                     RecommendationSection(
-                        movie = movie,
                         collections = detailState.collectionVideos,
                         similar = detailState.similarVideos,
                         navigate = {
@@ -419,7 +416,7 @@ fun PreviewDetailScreen() {
         showImage = { _, _ ->
 
         },
-        changeFavoriteClick = {_, _, _ ->
+        changeFavoriteClick = { _, _, _ ->
 
         }
     )
@@ -495,7 +492,7 @@ fun MovieInfoSection(
 
             Button(
                 onClick = {
-                    val favorite = if(addedToFavorite.value) 0 else 1
+                    val favorite = if (addedToFavorite.value) 0 else 1
                     val dateTime = LocalDateTime.now()
                     changeFavoriteClick(favorite, dateTime.toString(), movie.id)
                     addedToFavorite.value = !addedToFavorite.value

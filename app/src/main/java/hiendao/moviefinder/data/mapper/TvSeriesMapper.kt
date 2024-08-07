@@ -6,7 +6,7 @@ import hiendao.moviefinder.data.network.tvseries.model.list.TvSeriesDTO
 import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.TvSeries
 
-fun TvSeriesDetailDTO.toTvSeriesEntity(): TvSeriesEntity {
+fun TvSeriesDetailDTO.toTvSeriesEntity(favorite: Int, favoriteDate: String): TvSeriesEntity {
     return TvSeriesEntity(
         adult = adult ?: false,
         backdropPath = backdrop_path ?: "",
@@ -45,8 +45,11 @@ fun TvSeriesDetailDTO.toTvSeriesEntity(): TvSeriesEntity {
         tagline = tagline ?: "",
         type = type ?: "",
         videos = videos?.results?.joinToString(",") { it?.key ?: "" } ?: "",
+        similar = similar?.results?.joinToString(","){ it.id.toString() } ?: "",
         voteAverage = vote_average ?: 0.0,
-        voteCount = vote_count ?: 0
+        voteCount = vote_count ?: 0,
+        addedToFavorite = favorite,
+        addedInFavoriteDate = favoriteDate
     )
 }
 
@@ -55,7 +58,7 @@ fun TvSeriesEntity.toTvSeries(): TvSeries {
         adult = adult,
         backdropPath = backdropPath,
         createdBy = createdBy,
-        credits = credits.split(",").map { it.toInt() },
+        credits = credits.split(",").map { if(it.isNotEmpty()) it.toInt() else -1 },
         episodeRuntime = episodeRuntime.split(","),
         firstAirDate = firstAirDate,
         genres = genres.split(",").map { it.toInt() },
@@ -85,8 +88,10 @@ fun TvSeriesEntity.toTvSeries(): TvSeries {
         tagline = tagline,
         type = type,
         videos = videos.split(","),
+        similar = similar.split(",").map { if(it.isNotEmpty()) it.toInt() else -1},
         voteAverage = voteAverage,
-        voteCount = voteCount
+        voteCount = voteCount,
+        addedToFavorite = addedToFavorite == 1
     )
 }
 
@@ -127,6 +132,7 @@ fun TvSeriesDetailDTO.toTvSeries(): TvSeries {
         tagline = tagline ?: "",
         type = type ?: "",
         videos = videos?.results?.map { it?.key ?: "" } ?: emptyList(),
+        similar = similar?.results?.map {it.id } ?: emptyList(),
         voteAverage = vote_average ?: 0.0,
         voteCount = vote_count ?: 0
     )
@@ -167,12 +173,13 @@ fun TvSeriesDTO.toTvSeries(): TvSeries {
         tagline = "",
         type = "",
         videos = emptyList(),
+        similar = emptyList(),
         voteAverage = vote_average ?: 0.0,
         voteCount = vote_count ?: 0
     )
 }
 
-fun TvSeriesDTO.toTvSeriesEntity(): TvSeriesEntity {
+fun TvSeriesDTO.toTvSeriesEntity(favorite: Int, favoriteDate: String): TvSeriesEntity {
     return TvSeriesEntity(
         adult = adult ?: false,
         backdropPath = backdrop_path ?: "",
@@ -207,8 +214,11 @@ fun TvSeriesDTO.toTvSeriesEntity(): TvSeriesEntity {
         tagline = "",
         type = "",
         videos = "",
+        similar = "",
         voteAverage = vote_average ?: 0.0,
-        voteCount = vote_count ?: 0
+        voteCount = vote_count ?: 0,
+        addedToFavorite = favorite,
+        addedInFavoriteDate = favoriteDate
     )
 }
 
@@ -227,7 +237,7 @@ fun TvSeriesDTO.toMedia(): Media{
         genreIds = genre_ids ?: emptyList(),
         voteAverage = vote_average ?: 0.0,
         voteCount = vote_count ?: 0,
-        mediaType = "TvSeries"
+        mediaType = "Tv Series"
     )
 }
 
@@ -252,7 +262,7 @@ fun TvSeries.toMedia(): Media{
         genreIds = genres,
         voteAverage = voteAverage,
         voteCount = voteCount,
-        mediaType = "TvSeries"
+        mediaType = "Tv Series"
     )
 }
 

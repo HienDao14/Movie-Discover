@@ -52,9 +52,11 @@ class RepositoryModule {
     fun bindCommonRepository(
         movieApi: MovieApi,
         movieDAO: MovieDAO,
+        tvSeriesApi: TvSeriesApi,
+        tvSeriesDAO: TvSeriesDAO,
         creditDAO: CreditDAO
     ): CommonRepository{
-        return CommonRepositoryImp(movieApi, movieDAO, creditDAO)
+        return CommonRepositoryImp(movieApi, movieDAO, tvSeriesApi, tvSeriesDAO, creditDAO)
     }
 
     @Provides

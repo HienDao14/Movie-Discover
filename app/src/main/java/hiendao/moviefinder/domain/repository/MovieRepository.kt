@@ -32,8 +32,6 @@ interface MovieRepository {
         shouldCallNetwork: Boolean = false
     ): Flow<Resource<List<Movie>>>
 
-    suspend fun getSimilarMovies(movieId: Int): Flow<Resource<List<Media>>>
-
     suspend fun getCollection(collectionId: Int): Flow<Resource<List<Media>>>
 
     suspend fun getMoviesWithCreditId(creditId: Int): Flow<Resource<List<Movie>>>
