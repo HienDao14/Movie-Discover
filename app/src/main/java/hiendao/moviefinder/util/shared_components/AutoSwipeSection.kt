@@ -7,20 +7,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import hiendao.moviefinder.domain.model.movie.Movie
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.util.NavRoute
 
 @Composable
 fun AutoSwipeSection(
     modifier: Modifier = Modifier,
     sectionType: String,
-    movies: List<Movie>,
+    listMedia: List<Media>,
     navHostController: NavHostController
 ) {
 
@@ -39,7 +38,7 @@ fun AutoSwipeSection(
         Spacer(modifier = Modifier.height(8.dp))
 
         AutoSwipePager(
-            movies = movies.take(7),
+            movies = listMedia.take(7),
             modifier = Modifier
                 .height(220.dp)
                 .fillMaxWidth(),

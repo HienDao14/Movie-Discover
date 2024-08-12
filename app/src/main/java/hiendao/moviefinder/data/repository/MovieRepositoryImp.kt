@@ -1,17 +1,17 @@
 package hiendao.moviefinder.data.repository
 
-import androidx.paging.ExperimentalPagingApi
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import hiendao.moviefinder.data.local.MovieDAO
-import hiendao.moviefinder.data.local.MovieDatabase
-import hiendao.moviefinder.data.local.model.MovieEntity
+import hiendao.moviefinder.data.local.dao.CreditDAO
+import hiendao.moviefinder.data.local.dao.MovieDAO
+import hiendao.moviefinder.data.local.dao.TvSeriesDAO
+import hiendao.moviefinder.data.mapper.toListMovie
+import hiendao.moviefinder.data.mapper.toListMovieEntity
+import hiendao.moviefinder.data.mapper.toMedia
 import hiendao.moviefinder.data.mapper.toMovie
 import hiendao.moviefinder.data.mapper.toMovieEntity
-import hiendao.moviefinder.data.network.MovieNetworkMediator
+import hiendao.moviefinder.data.mapper.toTvSeriesEntity
 import hiendao.moviefinder.data.network.movie.MovieApi
-import hiendao.moviefinder.domain.model.movie.Movie
+import hiendao.moviefinder.domain.model.Media
+import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.domain.repository.MovieRepository
 import hiendao.moviefinder.util.Category
 import hiendao.moviefinder.util.Resource
@@ -19,115 +19,112 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
-@OptIn(ExperimentalPagingApi::class)
 class MovieRepositoryImp @Inject constructor(
-    private val movieDb: MovieDatabase,
     private val movieApi: MovieApi,
-    private val movieDAO: MovieDAO
-): MovieRepository {
-    override fun getPopularMoviesPaged(): Flow<PagingData<MovieEntity>> {
-        val pagingSourceFactory = {movieDAO.loadCategoryMoviesPaged(Category.POPULAR.name)}
-        return Pager(
-            config = PagingConfig(pageSize = 20),
-            remoteMediator = MovieNetworkMediator(
-                movieDb, movieApi, Category.POPULAR
-            ),
-            pagingSourceFactory = pagingSourceFactory
-        ).flow
-    }
+    private val movieDAO: MovieDAO,
+    private val creditDAO: CreditDAO,
+    private val tvSeriesDAO: TvSeriesDAO
+) : MovieRepository {
 
-    override suspend fun getTopRatedMovies(): Flow<PagingData<MovieEntity>> {
-        val pagingSourceFactory = {movieDAO.loadCategoryMoviesPaged(Category.TOP_RATED.name)}
-        return Pager(
-            config = PagingConfig(pageSize = 20),
-            remoteMediator = MovieNetworkMediator(
-                movieDb, movieApi, Category.TOP_RATED
-            ),
-            pagingSourceFactory = pagingSourceFactory
-        ).flow
-    }
-
-    override suspend fun getNowPlayingMovies(): Flow<PagingData<MovieEntity>> {
-        val pagingSourceFactory = {movieDAO.loadCategoryMoviesPaged(Category.NOW_PLAYING.name)}
-        return Pager(
-            config = PagingConfig(pageSize = 20),
-            remoteMediator = MovieNetworkMediator(
-                movieDb, movieApi, Category.NOW_PLAYING
-            ),
-            pagingSourceFactory = pagingSourceFactory
-        ).flow
-    }
-
-    override suspend fun getUpcomingMovies(): Flow<PagingData<MovieEntity>> {
-        val pagingSourceFactory = {movieDAO.loadCategoryMoviesPaged(Category.UPCOMING.name)}
-        return Pager(
-            config = PagingConfig(pageSize = 20),
-            remoteMediator = MovieNetworkMediator(
-                movieDb, movieApi, Category.UPCOMING
-            ),
-            pagingSourceFactory = pagingSourceFactory
-        ).flow
-    }
-
-    override fun getTrendingDayMoviesPaged(): Flow<PagingData<MovieEntity>> {
-        val pagingSourceFactory = {movieDAO.loadCategoryMoviesPaged(Category.TRENDING_DAY.name)}
-        return Pager(
-            config = PagingConfig(pageSize = 20),
-            remoteMediator = MovieNetworkMediator(
-                movieDb, movieApi, Category.TRENDING_DAY
-            ),
-            pagingSourceFactory = pagingSourceFactory
-        ).flow
-    }
-
-    override suspend fun getTrendingWeekMoviesPaged(): Flow<PagingData<MovieEntity>> {
-        val pagingSourceFactory = {movieDAO.loadCategoryMoviesPaged(Category.TRENDING_WEEK.name)}
-        return Pager(
-            config = PagingConfig(pageSize = 20),
-            remoteMediator = MovieNetworkMediator(
-                movieDb, movieApi, Category.TRENDING_WEEK
-            ),
-            pagingSourceFactory = pagingSourceFactory
-        ).flow
-    }
-
-    override suspend fun getPopularMovies(): Flow<Resource<List<Movie>>> {
+    override suspend fun getTopRatedMovies(
+        page: Int,
+        isRefresh: Boolean,
+        shouldCallNetwork: Boolean
+    ): Flow<Resource<List<Movie>>> {
         return flow {
             emit(Resource.Loading())
 
-            val localMovies = movieDAO.loadCategoryMovies(Category.POPULAR.name)
+            if (isRefresh || shouldCallNetwork) {
+                val remoteMovies = try {
+                    movieApi.getTopRatedMovies(page = page)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emit(Resource.Error("Couldn't load data"))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
+
+                remoteMovies.results.let { movies ->
+                    val moviesResult = movies.map {
+                        it.toMovie()
+                    }
+                    movies.forEachIndexed { index, movie ->
+                        val entity = movieDAO.getMovieWithId(movie.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.TOP_RATED.name)) it.category
+                                else it.category + Category.TOP_RATED.name
+                            movieDAO.upsertMovie(
+                                movie.toMovieEntity(
+                                    category = category,
+                                    index = (remoteMovies.page - 1) * 20 + index,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = Category.TOP_RATED.name,
+                                index = (remoteMovies.page - 1) * 20 + index
+                            )
+                        )
+                    }
+
+                    emit(Resource.Success(moviesResult))
+
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
+            }
+
+            val localMovies =
+                movieDAO.loadCategoryMovies("%${Category.TOP_RATED.name}%", (page - 1) * 20)
 
             val shouldJustLoadFromCache = localMovies.isNotEmpty()
-            if(shouldJustLoadFromCache){
+            if (shouldJustLoadFromCache) {
                 emit(Resource.Success(
                     data = localMovies.map {
                         it.toMovie()
                     }
                 ))
                 emit(Resource.Loading(false))
+                return@flow
             }
 
             val remoteMovies = try {
-                movieApi.getPopularMovies(page = 1)
-            }catch (e: Exception){
+                movieApi.getTopRatedMovies(page = page)
+            } catch (e: Exception) {
                 e.printStackTrace()
                 emit(Resource.Error("Couldn't load data"))
                 emit(Resource.Loading(false))
                 return@flow
             }
 
-            remoteMovies.results.let {movies ->
+            remoteMovies.results.let { movies ->
                 val moviesResult = movies.map {
                     it.toMovie()
                 }
-                val moviesEntity = movies.mapIndexed { index, movieDTO ->
-                    movieDTO.toMovieEntity(
-                        category = Category.POPULAR,
-                        index = (remoteMovies.page - 1) * 20 + index
+                movies.forEachIndexed { index, movie ->
+                    val entity = movieDAO.getMovieWithId(movie.id)
+                    entity?.let {
+                        val category =
+                            if (it.category.contains(Category.TOP_RATED.name)) it.category
+                            else it.category + Category.TOP_RATED.name
+                        movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = category,
+                                index = (remoteMovies.page - 1) * 20 + index,
+                                favorite = it.addedToFavorite,
+                                favoriteDate = it.addedInFavoriteDate
+                            )
+                        )
+                    } ?: movieDAO.upsertMovie(
+                        movie.toMovieEntity(
+                            category = Category.TOP_RATED.name,
+                            index = (remoteMovies.page - 1) * 20 + index
+                        )
                     )
                 }
-
-                movieDAO.upsertListMovie(moviesEntity)
 
                 emit(Resource.Success(moviesResult))
 
@@ -136,93 +133,319 @@ class MovieRepositoryImp @Inject constructor(
         }
     }
 
-    override suspend fun getTrendingDayMovies(): Flow<Resource<List<Movie>>> {
+    override suspend fun getPopularMovies(
+        page: Int,
+        isRefresh: Boolean
+    ): Flow<Resource<List<Movie>>> {
         return flow {
             emit(Resource.Loading())
 
-            val localMovies = movieDAO.loadCategoryMovies(Category.TRENDING_DAY.name)
+            if (isRefresh) {
+                val remoteMovies = try {
+                    movieApi.getPopularMovies(page = page)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emit(Resource.Error("Couldn't load data"))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
 
-            val shouldJustLoadFromCache = localMovies.isNotEmpty()
-            if(shouldJustLoadFromCache){
-                emit(Resource.Success(
-                    data = localMovies.map {
+                remoteMovies.results.let { movies ->
+                    val moviesResult = movies.map {
                         it.toMovie()
                     }
-                ))
-                emit(Resource.Loading(false))
-            }
+                    movies.forEachIndexed { index, movie ->
+                        val entity = movieDAO.getMovieWithId(movie.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.POPULAR.name)) it.category
+                                else it.category + Category.POPULAR.name
+                            movieDAO.upsertMovie(
+                                movie.toMovieEntity(
+                                    category = category,
+                                    index = (remoteMovies.page - 1) * 20 + index,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = Category.POPULAR.name,
+                                index = (remoteMovies.page - 1) * 20 + index
+                            )
+                        )
+                    }
 
-            val remoteMovies = try {
-                movieApi.getTrendingMovie(page = 1, timeWindow = "day")
-            }catch (e: Exception){
-                e.printStackTrace()
-                emit(Resource.Error("Couldn't load data"))
-                emit(Resource.Loading(false))
-                return@flow
-            }
+                    emit(Resource.Success(moviesResult))
 
-            remoteMovies.results.let {movies ->
-                val moviesResult = movies.map {
-                    it.toMovie()
+                    emit(Resource.Loading(false))
                 }
-                val moviesEntity = movies.mapIndexed { index, movieDTO ->
-                    movieDTO.toMovieEntity(
-                        category = Category.TRENDING_DAY,
-                        index = (remoteMovies.page - 1) * 20 + index
-                    )
+            } else {
+                val localMovies =
+                    movieDAO.loadCategoryMovies("%${Category.POPULAR.name}%", (page - 1) * 20)
+
+                val shouldJustLoadFromCache = localMovies.isNotEmpty()
+                if (shouldJustLoadFromCache) {
+                    emit(Resource.Success(
+                        data = localMovies.map {
+                            it.toMovie()
+                        }
+                    ))
+                    emit(Resource.Loading(false))
+                    return@flow
                 }
 
-                movieDAO.upsertListMovie(moviesEntity)
+                val remoteMovies = try {
+                    movieApi.getPopularMovies(page = page)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emit(Resource.Error("Couldn't load data"))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
 
-                emit(Resource.Success(moviesResult))
+                remoteMovies.results.let { movies ->
+                    val moviesResult = movies.map {
+                        it.toMovie()
+                    }
+                    movies.forEachIndexed { index, movie ->
+                        val entity = movieDAO.getMovieWithId(movie.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.POPULAR.name)) it.category
+                                else it.category + Category.POPULAR.name
+                            movieDAO.upsertMovie(
+                                movie.toMovieEntity(
+                                    category = category,
+                                    index = (remoteMovies.page - 1) * 20 + index,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = Category.POPULAR.name,
+                                index = (remoteMovies.page - 1) * 20 + index
+                            )
+                        )
+                    }
 
-                emit(Resource.Loading(false))
+                    emit(Resource.Success(moviesResult))
+
+                    emit(Resource.Loading(false))
+                }
             }
         }
     }
 
-    override suspend fun getTrendingWeekMovies(): Flow<Resource<List<Movie>>> {
+    override suspend fun getTrendingDayMovies(
+        page: Int,
+        isRefresh: Boolean
+    ): Flow<Resource<List<Movie>>> {
         return flow {
             emit(Resource.Loading())
 
-            val localMovies = movieDAO.loadCategoryMovies(Category.TRENDING_WEEK.name)
+            if (isRefresh) {
+                val remoteMovies = try {
+                    movieApi.getTrendingMovie(page = page, timeWindow = "day")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emit(Resource.Error("Couldn't load data"))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
 
-            val shouldJustLoadFromCache = localMovies.isNotEmpty()
-            if(shouldJustLoadFromCache){
-                emit(Resource.Success(
-                    data = localMovies.map {
+                remoteMovies.results.let { movies ->
+                    val moviesResult = movies.map {
                         it.toMovie()
                     }
-                ))
-                emit(Resource.Loading(false))
-            }
+                    movies.forEachIndexed { index, movie ->
+                        val entity = movieDAO.getMovieWithId(movie.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.TRENDING_DAY.name)) it.category
+                                else it.category + Category.TRENDING_DAY.name
+                            movieDAO.upsertMovie(
+                                movie.toMovieEntity(
+                                    category = category,
+                                    index = (remoteMovies.page - 1) * 20 + index,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = Category.TRENDING_DAY.name,
+                                index = (remoteMovies.page - 1) * 20 + index
+                            )
+                        )
+                    }
 
-            val remoteMovies = try {
-                movieApi.getTrendingMovie(page = 1, timeWindow = "week")
-            }catch (e: Exception){
-                e.printStackTrace()
-                emit(Resource.Error("Couldn't load data"))
-                emit(Resource.Loading(false))
-                return@flow
-            }
+                    emit(Resource.Success(moviesResult))
 
-            remoteMovies.results.let {movies ->
-                val moviesResult = movies.map {
-                    it.toMovie()
+                    emit(Resource.Loading(false))
                 }
-                val moviesEntity = movies.mapIndexed { index, movieDTO ->
-                    movieDTO.toMovieEntity(
-                        category = Category.TRENDING_WEEK,
-                        index = (remoteMovies.page - 1) * 20 + index
-                    )
+            } else {
+                val localMovies =
+                    movieDAO.loadCategoryMovies("%${Category.TRENDING_DAY.name}%", (page - 1) * 20)
+
+                if (localMovies.isNotEmpty()) {
+                    emit(Resource.Success(
+                        data = localMovies.map {
+                            it.toMovie()
+                        }
+                    ))
+                    emit(Resource.Loading(false))
+                    return@flow
                 }
 
-                movieDAO.upsertListMovie(moviesEntity)
+                val remoteMovies = try {
+                    movieApi.getTrendingMovie(page = page, timeWindow = "day")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emit(Resource.Error("Couldn't load data"))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
 
-                emit(Resource.Success(moviesResult))
+                remoteMovies.results.let { movies ->
+                    val moviesResult = movies.map {
+                        it.toMovie()
+                    }
+                    movies.forEachIndexed { index, movie ->
+                        val entity = movieDAO.getMovieWithId(movie.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.TRENDING_DAY.name)) it.category
+                                else it.category + Category.TRENDING_DAY.name
+                            movieDAO.upsertMovie(
+                                movie.toMovieEntity(
+                                    category = category,
+                                    index = (remoteMovies.page - 1) * 20 + index,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = Category.TRENDING_DAY.name,
+                                index = (remoteMovies.page - 1) * 20 + index
+                            )
+                        )
+                    }
+                    emit(Resource.Success(moviesResult))
 
-                emit(Resource.Loading(false))
+                    emit(Resource.Loading(false))
+                }
             }
+        }
+    }
+
+    override suspend fun getTrendingWeekMovies(
+        page: Int,
+        isRefresh: Boolean,
+        shouldCallNetwork: Boolean
+    ): Flow<Resource<List<Movie>>> {
+        return flow {
+            emit(Resource.Loading())
+
+            if (isRefresh || shouldCallNetwork) {
+                val remoteMovies = try {
+                    movieApi.getTrendingMovie(page = page, timeWindow = "week")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emit(Resource.Error("Couldn't load data"))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
+
+                remoteMovies.results.let { movies ->
+                    val moviesResult = movies.map {
+                        it.toMovie()
+                    }
+                    movies.forEachIndexed { index, movie ->
+                        val entity = movieDAO.getMovieWithId(movie.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.TRENDING_WEEK.name)) it.category
+                                else it.category + Category.TRENDING_WEEK.name
+                            movieDAO.upsertMovie(
+                                movie.toMovieEntity(
+                                    category = category,
+                                    index = (remoteMovies.page - 1) * 20 + index,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = Category.TRENDING_WEEK.name,
+                                index = (remoteMovies.page - 1) * 20 + index
+                            )
+                        )
+                    }
+
+                    emit(Resource.Success(moviesResult))
+
+                    emit(Resource.Loading(false))
+                }
+            } else {
+
+                val localMovies =
+                    movieDAO.loadCategoryMovies("%${Category.TRENDING_WEEK.name}%", (page - 1) * 20)
+
+                val shouldJustLoadFromCache = localMovies.isNotEmpty()
+                if (shouldJustLoadFromCache) {
+                    emit(Resource.Success(
+                        data = localMovies.map {
+                            it.toMovie()
+                        }
+                    ))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
+
+                val remoteMovies = try {
+                    movieApi.getTrendingMovie(page = page, timeWindow = "week")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emit(Resource.Error("Couldn't load data"))
+                    emit(Resource.Loading(false))
+                    return@flow
+                }
+
+                remoteMovies.results.let { movies ->
+                    val moviesResult = movies.map {
+                        it.toMovie()
+                    }
+                    movies.forEachIndexed { index, movie ->
+                        val entity = movieDAO.getMovieWithId(movie.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.TRENDING_WEEK.name)) it.category
+                                else it.category + Category.TRENDING_WEEK.name
+                            movieDAO.upsertMovie(
+                                movie.toMovieEntity(
+                                    category = category,
+                                    index = (remoteMovies.page - 1) * 20 + index,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            movie.toMovieEntity(
+                                category = Category.TRENDING_WEEK.name,
+                                index = (remoteMovies.page - 1) * 20 + index
+                            )
+                        )
+                    }
+
+                    emit(Resource.Success(moviesResult))
+
+                    emit(Resource.Loading(false))
+                }
+            }
+
         }
     }
 
@@ -232,18 +455,21 @@ class MovieRepositoryImp @Inject constructor(
 
             val localMovie = movieDAO.getMovieWithId(movieId)
 
-            if(localMovie == null){
+            if (localMovie == null) {
                 emit(Resource.Error("Couldn't found movie"))
                 emit(Resource.Loading(false))
                 return@flow
             }
 
-            val isDetail = !(localMovie.runtime == 0 || localMovie.status == "" || localMovie.tagline == "")
+            val isDetail =
+                !(localMovie.runtime == 0 || localMovie.status == "" || localMovie.images.isEmpty() || localMovie.videos.isNullOrEmpty())
 
-            if(isDetail){
-                emit(Resource.Success(
-                    data = localMovie.toMovie()
-                ))
+            if (isDetail) {
+                emit(
+                    Resource.Success(
+                        data = localMovie.toMovie()
+                    )
+                )
                 emit(Resource.Loading(false))
                 return@flow
             }
@@ -252,96 +478,75 @@ class MovieRepositoryImp @Inject constructor(
                 movieApi.getMovieDetailInfo(
                     movieId
                 )
-            } catch(e: Exception){
-                e.printStackTrace()
+            } catch (e: Exception) {
+                println("movie screen: ${e.message}")
                 emit(Resource.Error("Couldn't load data"))
                 emit(Resource.Loading(false))
                 return@flow
             }
 
-            remoteMovie.let {movie ->
-
-                remoteMovie.similar?.results?.let {listSimilar ->
+            remoteMovie.let { movie ->
+                remoteMovie.similar?.results?.let { listSimilar ->
                     listSimilar.mapIndexed { index, movieDTO ->
-                        if(movieDTO.backdrop_path != null && movieDTO.poster_path != null){
-                            val similarEntity = movieDTO.toMovieEntity(
-                                category = Category.MOVIE,
-                                index = (remoteMovie.similar.page - 1) * 10 + index
+                        if (movieDTO.backdrop_path != null && movieDTO.poster_path != null) {
+                            val entity = movieDAO.getMovieWithId(movieDTO.id)
+                            entity?.let {
+                                val category =
+                                    if (it.category.contains(Category.MOVIE.name)) it.category
+                                    else it.category + Category.MOVIE.name
+                                movieDAO.upsertMovie(
+                                    movieDTO.toMovieEntity(
+                                        category = category,
+                                        index = -1,
+                                        favorite = it.addedToFavorite,
+                                        favoriteDate = it.addedInFavoriteDate
+                                    )
+                                )
+                            } ?: movieDAO.upsertMovie(
+                                movieDTO.toMovieEntity(
+                                    category = Category.MOVIE.name,
+                                    index = -1
+                                )
                             )
-                            movieDAO.upsertMovie(similarEntity)
                         }
                     }
                 }
 
-                val movieResult = movie.toMovie()
-                val movieEntity = movie.toMovieEntity()
-
-                movieDAO.upsertMovie(movieEntity)
-
-                emit(Resource.Success(
-                    data = movieResult
-                ))
-
-                emit(Resource.Loading(false))
-            }
-        }
-    }
-
-    override suspend fun getSimilarMovies(movieId: Int): Flow<Resource<List<Movie>>> {
-        return flow {
-            emit(Resource.Loading())
-
-            val localMovie = movieDAO.getMovieWithId(movieId)
-            if(localMovie != null && localMovie.similar != ""){
-                val similarIds = localMovie.similar
-                val similarMovies = mutableListOf<Movie>()
-                similarIds.forEach {id ->
-                    val movie = movieDAO.getMovieWithId(id.toInt())
-                    movie?.let {
-                        similarMovies.add(it.toMovie())
-                    }
-                }
-
-                emit(Resource.Success(similarMovies))
-                emit(Resource.Loading(false))
-                return@flow
-            }
-
-            val remoteMovie = try {
-                movieApi.getMovieDetailInfo(
-                    movieId
-                )
-            } catch(e: Exception){
-                e.printStackTrace()
-                emit(Resource.Error("Couldn't load data"))
-                emit(Resource.Loading(false))
-                return@flow
-            }
-
-            remoteMovie.let {movie ->
-
-                remoteMovie.similar?.results?.let {listSimilar ->
-                    listSimilar.mapIndexed { index, movieDTO ->
-                        val similarEntity = movieDTO.toMovieEntity(
-                            category = Category.MOVIE,
-                            index = (remoteMovie.similar.page - 1) * 10 + index
+                val entity = movieDAO.getMovieWithId(movie.id)
+                entity?.let {
+                    val category =
+                        if (it.category.contains(Category.MOVIE.name)) it.category
+                        else it.category + Category.MOVIE.name
+                    movieDAO.upsertMovie(
+                        movie.toMovieEntity(
+                            category = category,
+                            index = -1,
+                            favorite = it.addedToFavorite,
+                            favoriteDate = it.addedInFavoriteDate
                         )
-                        movieDAO.upsertMovie(similarEntity)
-                    }
-                    val similarMovies = listSimilar.map { it.toMovie() }
-                    emit(Resource.Success(similarMovies))
-                    emit(Resource.Loading(false))
-                    return@flow
-                }
+                    )
+                } ?: movieDAO.upsertMovie(
+                    movie.toMovieEntity(
+                        category = Category.MOVIE.name,
+                        index = -1
+                    )
+                )
 
-                emit(Resource.Error("Couldn't load data"))
+                val movieResult = movie.toMovie()
+
+                emit(
+                    Resource.Success(
+                        data = movieResult
+                    )
+                )
+
                 emit(Resource.Loading(false))
                 return@flow
             }
         }
     }
 
-    override suspend fun getCollection(collectionId: Int): Flow<Resource<List<Movie>>> {
+    override suspend fun getCollection(collectionId: Int): Flow<Resource<List<Media>>> {
         return flow {
             emit(Resource.Loading())
 
@@ -349,38 +554,171 @@ class MovieRepositoryImp @Inject constructor(
                 movieApi.getMovieCollection(
                     collectionId
                 )
-            } catch(e: Exception){
+            } catch (e: Exception) {
                 e.printStackTrace()
                 emit(Resource.Error("Couldn't load data"))
                 emit(Resource.Loading(false))
                 return@flow
             }
 
-            remoteCollection.parts.let {listPart ->
+            remoteCollection.parts.let { listPart ->
                 listPart.forEach {
-                    if(it.media_type == "movie"){
+                    if (it.media_type == "movie") {
                         val movie = movieDAO.getMovieWithId(it.id)
-                        if(movie == null){
+                        if (movie == null) {
                             movieDAO.upsertMovie(
                                 it.toMovieEntity()
                             )
                         }
-                    } else{
+                    } else {
                         //Tv Series
+                        val tvSeries = tvSeriesDAO.getTvSeriesById(it.id)
+                        if(tvSeries == null){
+                            tvSeriesDAO.insertTvSeries(
+                                it.toTvSeriesEntity()
+                            )
+                        }
                     }
                 }
 
                 val movies = listPart
-                    .filter {
-                        it.media_type == "movie"
-                    }
                     .map {
-                    it.toMovie()
+                        it.toMedia()
+                    }
+
+                emit(
+                    Resource.Success(
+                        data = movies
+                    )
+                )
+                emit(Resource.Loading(false))
+                return@flow
+            }
+        }
+    }
+
+    override suspend fun getMoviesWithCreditId(creditId: Int): Flow<Resource<List<Movie>>> {
+        return flow {
+            emit(Resource.Loading())
+
+            try {
+                val localCredit = creditDAO.getCredit(creditId)
+                if (localCredit != null && localCredit.movieId.isNotEmpty()) {
+                    var movies = emptyList<Movie>()
+                    val movie = movieDAO.getMoviesInListId(localCredit.movieId)
+                    if (movie.isNotEmpty()) {
+                        emit(Resource.Success(movie.toListMovie()))
+                        emit(Resource.Loading(false))
+                        return@flow
+                    } else {
+                        val movieCredits = movieApi.getMovieCredits(creditId)
+                        if (localCredit.type == "Cast") {
+                            movieCredits.cast?.toListMovieEntity(Category.MOVIE.name, -1)
+                                ?.toListMovie()
+                                ?.let {
+                                    movies = it
+                                }
+                        } else {
+                            movieCredits.crew?.toListMovieEntity(Category.MOVIE.name, -1)
+                                ?.toListMovie()
+                                ?.let {
+                                    movies = it
+                                }
+                        }
+                        if (movies.isNotEmpty()) {
+                            emit(Resource.Success(movies))
+                            emit(Resource.Loading(false))
+                            return@flow
+                        } else {
+                            emit(Resource.Error("Couldn't load data"))
+                            emit(Resource.Loading(false))
+                            return@flow
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emit(Resource.Error("Couldn't load data"))
+                emit(Resource.Loading(false))
+                return@flow
+            }
+        }
+    }
+
+    override suspend fun discoverMovies(
+        releaseDateLte: String,
+        page: Int,
+        withGenres: String?,
+        sortBy: String,
+        voteCountGte: Float?
+    ): Flow<Resource<List<Media>>> {
+        return flow {
+            emit(Resource.Loading())
+            val remoteMovies = try {
+                movieApi.getMovieDiscover(
+                    releaseDateLte = releaseDateLte,
+                    page = page,
+                    withGenres = withGenres,
+                    sortBy = sortBy,
+                    voteCountGte = voteCountGte
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emit(Resource.Error(e.message))
+                emit(Resource.Loading(false))
+                return@flow
+            }
+
+            remoteMovies.results.let { movies ->
+                val moviesResult = movies.map {
+                    it.toMedia()
+                }
+                movies.forEach { movieDTO ->
+                    val entity = movieDAO.getMovieWithId(movieDTO.id)
+                    entity?.let {
+                        val category =
+                            if (it.category.contains(Category.MOVIE.name)) it.category
+                            else it.category + Category.MOVIE.name
+                        movieDAO.upsertMovie(
+                            movieDTO.toMovieEntity(
+                                category = category,
+                                index = -1,
+                                favorite = it.addedToFavorite,
+                                favoriteDate = it.addedInFavoriteDate
+                            )
+                        )
+                    } ?: movieDAO.upsertMovie(
+                        movieDTO.toMovieEntity(
+                            category = Category.MOVIE.name,
+                            index = -1
+                        )
+                    )
                 }
 
-                emit(Resource.Success(
-                    data = movies
-                ))
+                emit(Resource.Success(moviesResult))
+
+                emit(Resource.Loading(false))
+                return@flow
+            }
+        }
+    }
+
+    override suspend fun changeFavoriteMovie(
+        favorite: Int,
+        addedDate: String,
+        movieId: Int
+    ): Flow<Resource<Boolean>> {
+        return flow {
+            emit(Resource.Loading())
+
+            try {
+                movieDAO.changeFavorite(favorite, addedDate, movieId)
+                emit(Resource.Success(data = true))
+                emit(Resource.Loading(false))
+                return@flow
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emit(Resource.Error(e.message))
                 emit(Resource.Loading(false))
                 return@flow
             }

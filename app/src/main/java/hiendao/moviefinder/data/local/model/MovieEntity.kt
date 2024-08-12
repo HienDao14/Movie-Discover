@@ -23,7 +23,7 @@ data class MovieEntity(
     val voteCount: Int,
     val budget: Int,
     val homepage: String,
-    val revenue: Int,
+    val revenue: Long,
     val runtime: Int,
     val status: String,
     val tagline: String,
@@ -34,5 +34,9 @@ data class MovieEntity(
     val category: String,
     val categoryIndex : Int,
     val videos: String?,
-    val collectionId: Int
+    val collectionId: Int,
+    val mediaType : String?= null,
+    val credits: String,
+    val addedToFavorite: Int = 0,
+    val addedInFavoriteDate: String = ""
 )

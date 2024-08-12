@@ -1,5 +1,6 @@
 package hiendao.moviefinder.data.network.movie.model.detail
 
+import hiendao.moviefinder.data.network.movie.model.credit.Credits
 import hiendao.moviefinder.data.network.movie.model.video.Videos
 import hiendao.moviefinder.domain.model.Genres
 
@@ -22,7 +23,7 @@ data class MovieDetailDTO(
     val production_companies: List<ProductionCompany>,
     val production_countries: List<ProductionCountry>,
     val release_date: String,
-    val revenue: Int,
+    val revenue: Long,
     val runtime: Int,
     val spoken_languages: List<SpokenLanguage>,
     val status: String,

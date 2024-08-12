@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -15,8 +17,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -24,17 +26,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.paging.compose.collectAsLazyPagingItems
 import dagger.hilt.android.AndroidEntryPoint
-import hiendao.moviefinder.presentation.MainScreen
-import hiendao.moviefinder.presentation.MovieViewModel
-import hiendao.moviefinder.presentation.detail.MovieDetailScreen
-import hiendao.moviefinder.presentation.detail.MovieDetailViewModel
-import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
-import hiendao.moviefinder.presentation.state.MainUIState
+import hiendao.moviefinder.presentation.main.MainScreen
+import hiendao.moviefinder.presentation.main.MainViewModel
+import hiendao.moviefinder.presentation.detail.creditDetail.CreditScreen
+import hiendao.moviefinder.presentation.detail.creditDetail.CreditViewModel
+import hiendao.moviefinder.presentation.main.favorite.FavoriteViewModel
+import hiendao.moviefinder.presentation.pagedScreen.MoviesFullScreenWithPaged
+import hiendao.moviefinder.presentation.detail.movieDetail.MovieDetailScreen
+import hiendao.moviefinder.presentation.detail.movieDetail.MovieDetailViewModel
+import hiendao.moviefinder.presentation.pagedScreen.TvSeriesFullScreenWithPaged
+import hiendao.moviefinder.presentation.detail.tvSeriesDetail.SeriesDetailViewModel
+import hiendao.moviefinder.presentation.detail.tvSeriesDetail.TvSeriesDetailScreen
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
-import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
+import kotlinx.coroutines.delay
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -43,14 +49,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MovieFinderTheme {
-
-                val mainViewModel = hiltViewModel<MovieViewModel>()
-                val mainUIState = mainViewModel.mainUIState.collectAsState().value
-
                 Surface {
                     Navigation(
-                        modifier = Modifier.fillMaxSize(),
-                        mainUIState = mainUIState
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
@@ -62,14 +63,20 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Navigation(
     modifier: Modifier = Modifier,
-    mainUIState: MainUIState
 ) {
     val navController = rememberNavController()
 
-    val viewModel = hiltViewModel<MovieViewModel>()
+    val mainViewModel = hiltViewModel<MainViewModel>()
+    val movieDetailViewModel = hiltViewModel<MovieDetailViewModel>()
+    val seriesDetailViewModel = hiltViewModel<SeriesDetailViewModel>()
+    val creditViewModel = hiltViewModel<CreditViewModel>()
+    val favoriteViewModel = hiltViewModel<FavoriteViewModel>()
 
-    val detailViewModel = hiltViewModel<MovieDetailViewModel>()
-    val detailState = detailViewModel.movieDetailState.collectAsState().value
+    val mainUIState = mainViewModel.mainUIState.collectAsState().value
+    val movieDetailState = movieDetailViewModel.movieDetailState.collectAsState().value
+    val seriesDetailState = seriesDetailViewModel.seriesState.collectAsState().value
+    val creditState = creditViewModel.creditState.collectAsState().value
+    val favoriteScreenState = favoriteViewModel.favoriteState.collectAsState().value
 
     NavHost(navController = navController, startDestination = NavRoute.HOME_SCREEN.name) {
 
@@ -79,26 +86,36 @@ fun Navigation(
             MainScreen(
                 modifier = modifier.fillMaxSize(),
                 mainUIState = mainUIState,
-                navHostController = navController
+                favoriteScreenState = favoriteScreenState,
+                navHostController = navController,
+                onEvent = mainViewModel::onEvent,
+                onFavoriteEvent = favoriteViewModel::onEvent
             )
         }
 
         composable(
             route = "${NavRoute.LISTING_SCREEN.name}?type={type}",
             arguments = listOf(
-                navArgument(name = "type"){
+                navArgument(name = "type") {
                     type = NavType.StringType
                 }
             )
-        ) {entry ->
+        ) { entry ->
             val type = entry.arguments?.getString("type")
             requireNotNull(type)
-            if(type == Constant.moviesTrendingNowScreen){
-                val movies = viewModel.popularMoviesPagedData.collectAsLazyPagingItems()
+            if (type == "Movie") {
                 MoviesFullScreenWithPaged(
-                    movies = movies,
-                    title = type,
-                    navHostController = navController
+                    type = type,
+                    navHostController = navController,
+                    uiState = mainUIState,
+                    onEvent = mainViewModel::onEvent
+                )
+            } else {
+                TvSeriesFullScreenWithPaged(
+                    type = type,
+                    navHostController = navController,
+                    uiState = mainUIState,
+                    onEvent = mainViewModel::onEvent
                 )
             }
         }
@@ -106,25 +123,40 @@ fun Navigation(
         composable(
             route = "${NavRoute.DETAIL_SCREEN}?movieId={movieId}",
             arguments = listOf(
-                navArgument(name = "movieId"){
+                navArgument(name = "movieId") {
                     type = NavType.StringType
                 }
             )
-        ){entry ->
+        ) { entry ->
             val movieId = entry.arguments?.getString("movieId")
             requireNotNull(movieId)
 
             LaunchedEffect(key1 = true) {
-                detailViewModel.load(movieId.toInt())
+                movieDetailViewModel.reload()
+                movieDetailViewModel.load(movieId.toInt())
+                delay(500)
             }
 
-            if(detailState.movie != null){
+            if (movieDetailState.movie != null && movieDetailState.movie.images.isNotEmpty() && movieDetailState.listCredit.isNotEmpty()) {
                 MovieDetailScreen(
-                    movie = detailState.movie,
-                    detailState = detailState,
-                    navHostController = navController
+                    movie = movieDetailState.movie,
+                    detailState = movieDetailState,
+                    navHostController = navController,
+                    onEvent = movieDetailViewModel::onEvent
                 )
-            } else {
+            } else if (movieDetailState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(50.dp).align(Alignment.Center)
+                    )
+                }
+            } else if (movieDetailState.errorMsg.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -139,6 +171,84 @@ fun Navigation(
                     )
                 }
             }
+        }
+
+        composable(
+            route = "${NavRoute.DETAIL_SCREEN}?seriesId={seriesId}",
+            arguments = listOf(
+                navArgument(name = "seriesId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { entry ->
+            val seriesId = entry.arguments?.getString("seriesId")
+            requireNotNull(seriesId)
+
+            LaunchedEffect(key1 = true) {
+                seriesDetailViewModel.reload()
+                seriesDetailViewModel.load(id = seriesId.toInt())
+                delay(500)
+            }
+
+            if (seriesDetailState.series != null && seriesDetailState.series.images.isNotEmpty() && seriesDetailState.credits.isNotEmpty()) {
+                //Series Screen Detail
+                TvSeriesDetailScreen(
+                    series = seriesDetailState.series,
+                    seriesDetailState = seriesDetailState,
+                    navHostController = navController,
+                    onEvent = seriesDetailViewModel::onEvent
+                )
+            } else if (movieDetailState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(50.dp).align(Alignment.Center)
+                    )
+                }
+            } else if (movieDetailState.errorMsg != "") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Something went wrong",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 19.sp
+                    )
+                }
+            }
+        }
+
+        composable(
+            route = "${NavRoute.CREDIT_SCREEN}?creditId={creditId}",
+            arguments = listOf(
+                navArgument(name = "creditId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { entry ->
+            val creditId = entry.arguments?.getString("creditId")
+            requireNotNull(creditId)
+
+            LaunchedEffect(key1 = true) {
+                creditViewModel.reload()
+                creditViewModel.load(creditId = creditId.toInt())
+                delay(2500)
+            }
+
+            CreditScreen(
+                creditState = creditState,
+                onEvent = creditViewModel::onEvent,
+                navHostController = navController
+            )
         }
     }
 }

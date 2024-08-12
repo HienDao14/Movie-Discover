@@ -1,18 +1,21 @@
 package hiendao.moviefinder.di
 
 import android.app.Application
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import hiendao.moviefinder.data.local.MovieDAO
-import hiendao.moviefinder.data.local.MovieDatabase
-import hiendao.moviefinder.data.local.model.MovieEntity
-import hiendao.moviefinder.data.network.MovieNetworkMediator
+import hiendao.moviefinder.data.local.dao.CreditDAO
+import hiendao.moviefinder.data.local.database.CreditDatabase
+import hiendao.moviefinder.data.local.dao.MovieDAO
+import hiendao.moviefinder.data.local.database.MovieDatabase
+import hiendao.moviefinder.data.local.dao.TvSeriesDAO
+import hiendao.moviefinder.data.local.database.TvSeriesDatabase
 import hiendao.moviefinder.data.network.movie.MovieApi
+import hiendao.moviefinder.data.network.search.SearchApi
 import hiendao.moviefinder.data.network.tvseries.TvSeriesApi
 import hiendao.moviefinder.data.network.util.base_url.BaseUrl.BASE_API_URL
 import hiendao.moviefinder.data.network.util.interceptor.MyInterceptor
@@ -61,8 +64,13 @@ class AppModule {
     }
 
     @Provides
+    fun provideSearchApi(retrofit: Retrofit): SearchApi{
+        return retrofit.create(SearchApi::class.java)
+    }
+
+    @Provides
     @Singleton
-    fun provideMovieDatabase(app: Application): MovieDatabase{
+    fun provideMovieDatabase(app: Application): MovieDatabase {
         return Room.databaseBuilder(
             app,
             MovieDatabase::class.java,
@@ -74,9 +82,55 @@ class AppModule {
 
     @Provides
     @Singleton
+    fun provideCreditDatabase(app: Application): CreditDatabase {
+        return Room.databaseBuilder(
+            app,
+            CreditDatabase::class.java,
+            "creditdb.db"
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTvSeriesDatabase(app: Application): TvSeriesDatabase {
+        return Room.databaseBuilder(
+            app,
+            TvSeriesDatabase::class.java,
+            "tvseriesdb.db"
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+    }
+
+    @Provides
+    @Singleton
     fun provideMovieDAO(
         movieDatabase: MovieDatabase
-    ): MovieDAO{
+    ): MovieDAO {
         return movieDatabase.dao
+    }
+
+    @Provides
+    @Singleton
+    fun provideCreditDAO(
+        creditDatabase: CreditDatabase
+    ): CreditDAO {
+        return creditDatabase.creditDao
+    }
+
+    @Provides
+    @Singleton
+    fun provideTvSeriesDAO(
+        tvSeriesDatabase: TvSeriesDatabase
+    ): TvSeriesDAO {
+        return tvSeriesDatabase.dao
+    }
+
+    @Provides
+    @Singleton
+    fun provideSharedPref(app: Application): SharedPreferences{
+        return app.getSharedPreferences("prefs", Context.MODE_PRIVATE)
     }
 }
