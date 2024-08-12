@@ -1,6 +1,7 @@
 package hiendao.moviefinder.data.mapper
 
 import hiendao.moviefinder.data.local.model.TvSeriesEntity
+import hiendao.moviefinder.data.network.movie.model.collection.PartCollection
 import hiendao.moviefinder.data.network.tvseries.model.detail.TvSeriesDetailDTO
 import hiendao.moviefinder.data.network.tvseries.model.list.TvSeriesDTO
 import hiendao.moviefinder.domain.model.Media
@@ -45,7 +46,7 @@ fun TvSeriesDetailDTO.toTvSeriesEntity(favorite: Int, favoriteDate: String): TvS
         tagline = tagline ?: "",
         type = type ?: "",
         videos = videos?.results?.joinToString(",") { it?.key ?: "" } ?: "",
-        similar = similar?.results?.joinToString(","){ it.id.toString() } ?: "",
+        similar = similar?.results?.joinToString(",") { it.id.toString() } ?: "",
         voteAverage = vote_average ?: 0.0,
         voteCount = vote_count ?: 0,
         addedToFavorite = favorite,
@@ -58,7 +59,7 @@ fun TvSeriesEntity.toTvSeries(): TvSeries {
         adult = adult,
         backdropPath = backdropPath,
         createdBy = createdBy,
-        credits = credits.split(",").map { if(it.isNotEmpty()) it.toInt() else -1 },
+        credits = credits.split(",").map { if (it.isNotEmpty()) it.toInt() else -1 },
         episodeRuntime = episodeRuntime.split(","),
         firstAirDate = firstAirDate,
         genres = genres.split(",").map { it.toInt() },
@@ -82,13 +83,13 @@ fun TvSeriesEntity.toTvSeries(): TvSeries {
         posterPath = posterPath,
         productionCompanies = productionCompanies.split(","),
         productionCountries = productionCountries.split(","),
-        seasons = seasons.split(",").map { it.toInt() },
+        seasons = seasons.split(",").map { it.toIntOrNull() ?: 0 },
         spokenLanguages = spokenLanguages.split(","),
         status = status,
         tagline = tagline,
         type = type,
         videos = videos.split(","),
-        similar = similar.split(",").map { if(it.isNotEmpty()) it.toInt() else -1},
+        similar = similar.split(",").map { if (it.isNotEmpty()) it.toInt() else -1 },
         voteAverage = voteAverage,
         voteCount = voteCount,
         addedToFavorite = addedToFavorite == 1
@@ -107,8 +108,8 @@ fun TvSeriesDetailDTO.toTvSeries(): TvSeries {
         genres = genres?.map { it?.id ?: 0 } ?: emptyList(),
         homepage = homepage ?: "",
         id = id,
-        images = images?.posters?.map { it?.file_path ?: "" }
-            ?.plus(images.backdrops?.map { it?.file_path ?: "" } ?: emptyList()) ?: emptyList(),
+        images = listOf(images?.posters?.joinToString(",") { it?.file_path ?: "" } ?: "",
+            images?.backdrops?.joinToString(",") { it?.file_path ?: "" } ?: ""),
         inProduction = in_production ?: false,
         languages = languages?.map { it ?: "" } ?: emptyList(),
         lastAirDate = last_air_date ?: "",
@@ -132,7 +133,7 @@ fun TvSeriesDetailDTO.toTvSeries(): TvSeries {
         tagline = tagline ?: "",
         type = type ?: "",
         videos = videos?.results?.map { it?.key ?: "" } ?: emptyList(),
-        similar = similar?.results?.map {it.id } ?: emptyList(),
+        similar = similar?.results?.map { it.id } ?: emptyList(),
         voteAverage = vote_average ?: 0.0,
         voteCount = vote_count ?: 0
     )
@@ -179,7 +180,11 @@ fun TvSeriesDTO.toTvSeries(): TvSeries {
     )
 }
 
-fun TvSeriesDTO.toTvSeriesEntity(favorite: Int, favoriteDate: String): TvSeriesEntity {
+fun TvSeriesDTO.toTvSeriesEntity(
+    category: String = "Movie",
+    favorite: Int,
+    favoriteDate: String
+): TvSeriesEntity {
     return TvSeriesEntity(
         adult = adult ?: false,
         backdropPath = backdrop_path ?: "",
@@ -218,17 +223,12 @@ fun TvSeriesDTO.toTvSeriesEntity(favorite: Int, favoriteDate: String): TvSeriesE
         voteAverage = vote_average ?: 0.0,
         voteCount = vote_count ?: 0,
         addedToFavorite = favorite,
-        addedInFavoriteDate = favoriteDate
+        addedInFavoriteDate = favoriteDate,
+        category = category
     )
 }
 
-fun List<TvSeriesDTO>.toListTvSeries(): List<TvSeries>{
-    return this.map {
-        it.toTvSeries()
-    }
-}
-
-fun TvSeriesDTO.toMedia(): Media{
+fun TvSeriesDTO.toMedia(): Media {
     return Media(
         id = id,
         title = name ?: "",
@@ -241,19 +241,7 @@ fun TvSeriesDTO.toMedia(): Media{
     )
 }
 
-fun List<TvSeriesDTO>.toMedias(): List<Media>{
-    return this.map {
-        it.toMedia()
-    }
-}
-
-fun List<TvSeries>.toListMedia(): List<Media>{
-    return this.map {
-        it.toMedia()
-    }
-}
-
-fun TvSeries.toMedia(): Media{
+fun TvSeries.toMedia(): Media {
     return Media(
         id = id,
         title = name,
@@ -266,3 +254,80 @@ fun TvSeries.toMedia(): Media{
     )
 }
 
+fun TvSeriesEntity.toMedia(): Media {
+    return Media(
+        id = id,
+        title = name,
+        posterPath = posterPath,
+        backdropPath = backdropPath,
+        genreIds = genres.split(",").map { it.toInt() },
+        voteAverage = voteAverage,
+        voteCount = voteCount,
+        mediaType = "Tv Series"
+    )
+}
+
+fun PartCollection.toTvSeriesEntity(): TvSeriesEntity {
+    return TvSeriesEntity(
+        adult = adult ?: false,
+        backdropPath = backdrop_path ?: "",
+        createdBy = "",
+        credits = "",
+        episodeRuntime = "",
+        firstAirDate = release_date ?: "",
+        genres = genre_ids.joinToString(",") { it.toString() } ?: "",
+        homepage = "",
+        id = id,
+        images = "",
+        inProduction = false,
+        languages = "",
+        lastAirDate = "",
+        lastEpisodeToAir = "",
+        name = title ?: "",
+        networks = "",
+        nextEpisodeToAir = "",
+        numberOfEpisodes = 0,
+        numberOfSeasons = 0,
+        originCountry = "",
+        originalLanguage = original_language ?: "",
+        originalName = original_title ?: "",
+        overview = overview ?: "",
+        popularity = popularity ?: 0.0,
+        posterPath = poster_path ?: "",
+        productionCompanies = "",
+        productionCountries = "",
+        seasons = "",
+        spokenLanguages = "",
+        status = "",
+        tagline = "",
+        type = "",
+        videos = "",
+        similar = "",
+        voteAverage = vote_average ?: 0.0,
+        voteCount = vote_count ?: 0
+    )
+}
+
+fun List<TvSeriesDTO>.toListTvSeries(): List<TvSeries> {
+    return this.map {
+        it.toTvSeries()
+    }
+}
+
+fun List<TvSeriesDTO>.toMedias(): List<Media> {
+    return this.map {
+        it.toMedia()
+    }
+}
+
+fun List<TvSeries>.toListMedia(): List<Media> {
+    return this.map {
+        it.toMedia()
+    }
+}
+
+fun List<TvSeriesEntity>.entityToListMedia(): List<Media> {
+    return this.map {
+        it.toMedia()
+    }
+}

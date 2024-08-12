@@ -24,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,24 +44,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import hiendao.moviefinder.data.mapper.makeFullUrl
-import hiendao.moviefinder.domain.model.SearchModel
-import hiendao.moviefinder.presentation.MovieViewModel
-import hiendao.moviefinder.presentation.state.MainUIState
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.presentation.state.SearchState
-import hiendao.moviefinder.presentation.uiEvent.MainEvent
 import hiendao.moviefinder.presentation.uiEvent.SearchEvent
 import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.convert.getGenresFromCode
 import hiendao.moviefinder.util.getAverageColor
-import hiendao.moviefinder.util.shared_components.CustomImage
 import hiendao.moviefinder.util.shared_components.RatingBar
 
 @Composable
@@ -100,7 +93,11 @@ fun SearchScreen(
                     SearchItem(
                         searchItem = item,
                         navigate = {
-                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${item.id}")
+                            if (item.mediaType == "movie") {
+                                navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${item.id}")
+                            } else {
+                                navHostController.navigate("${NavRoute.DETAIL_SCREEN}?seriesId=${item.id}")
+                            }
                         }
                     )
 
@@ -116,11 +113,11 @@ fun SearchScreen(
 @Composable
 fun SearchItem(
     modifier: Modifier = Modifier,
-    searchItem: SearchModel,
+    searchItem: Media,
     navigate: () -> Unit
 ) {
     val context = LocalContext.current
-    val listGenres = getGenresFromCode(searchItem.genres).joinToString(" - ") { it.name }
+    val listGenres = getGenresFromCode(searchItem.genreIds).joinToString(" - ") { it.name }
 
     val imageUrl = makeFullUrl(searchItem.posterPath)
     val imagePainter = rememberAsyncImagePainter(
@@ -251,5 +248,4 @@ fun SearchItem(
             }
         }
     }
-
 }

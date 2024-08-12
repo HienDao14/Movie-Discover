@@ -1,8 +1,8 @@
 package hiendao.moviefinder.data.repository
 
-import hiendao.moviefinder.data.local.CreditDAO
-import hiendao.moviefinder.data.local.MovieDAO
-import hiendao.moviefinder.data.local.TvSeriesDAO
+import hiendao.moviefinder.data.local.dao.CreditDAO
+import hiendao.moviefinder.data.local.dao.MovieDAO
+import hiendao.moviefinder.data.local.dao.TvSeriesDAO
 import hiendao.moviefinder.data.mapper.toCredit
 import hiendao.moviefinder.data.mapper.toCreditEntity
 import hiendao.moviefinder.data.mapper.toListCredit

@@ -3,7 +3,6 @@ package hiendao.moviefinder.presentation.state
 import androidx.paging.PagingData
 import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
-import hiendao.moviefinder.domain.model.TvSeries
 import kotlinx.coroutines.flow.Flow
 
 data class MainUIState(
@@ -24,7 +23,8 @@ data class MainUIState(
 
     val moviePage: Int = 1,
     val pagingType: String = "",
-    val trendingDayTvSeries: List<TvSeries> = emptyList(),
+    val popularTvSeries: List<Media> = emptyList(),
+    val topRatedTvSeries: List<Media> = emptyList(),
 
     val callApiInNewDate: Boolean = false,
     val didCheckDate: Boolean = false

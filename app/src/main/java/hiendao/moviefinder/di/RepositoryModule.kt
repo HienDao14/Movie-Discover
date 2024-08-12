@@ -4,10 +4,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import hiendao.moviefinder.data.local.CreditDAO
-import hiendao.moviefinder.data.local.MovieDAO
-import hiendao.moviefinder.data.local.MovieDatabase
-import hiendao.moviefinder.data.local.TvSeriesDAO
+import hiendao.moviefinder.data.local.dao.CreditDAO
+import hiendao.moviefinder.data.local.dao.MovieDAO
+import hiendao.moviefinder.data.local.dao.TvSeriesDAO
 import hiendao.moviefinder.data.network.movie.MovieApi
 import hiendao.moviefinder.data.network.search.SearchApi
 import hiendao.moviefinder.data.network.tvseries.TvSeriesApi
@@ -63,17 +62,19 @@ class RepositoryModule {
     @Singleton
     fun bindSearchRepository(
         searchApi: SearchApi,
-        movieDAO: MovieDAO
+        movieDAO: MovieDAO,
+        tvSeriesDAO: TvSeriesDAO
     ): SearchRepository{
-        return SearchRepositoryImp(searchApi, movieDAO)
+        return SearchRepositoryImp(searchApi, movieDAO, tvSeriesDAO)
     }
 
     @Provides
     @Singleton
     fun bindFavoriteRepository(
         movieDAO: MovieDAO,
-        creditDAO: CreditDAO
+        creditDAO: CreditDAO,
+        tvSeriesDAO: TvSeriesDAO
     ): FavoriteRepository{
-        return FavoriteRepositoryImp(movieDAO, creditDAO)
+        return FavoriteRepositoryImp(movieDAO, creditDAO, tvSeriesDAO)
     }
 }

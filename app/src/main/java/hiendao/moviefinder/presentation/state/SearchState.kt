@@ -1,5 +1,6 @@
 package hiendao.moviefinder.presentation.state
 
+import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.SearchModel
 
 data class SearchState(
@@ -8,5 +9,5 @@ data class SearchState(
 
     val searchQuery: String = "",
     val searchPage: Int = 1,
-    val searchResponse: List<SearchModel> = emptyList()
+    val searchResponse: List<Media> = emptyList()
 )

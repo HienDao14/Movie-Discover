@@ -193,15 +193,6 @@ fun AutoSwipePager(
                             )
                         }
                     }
-//                    with(pagerState) {
-//                        pagerState.animateScrollToPage(
-//                            page = (currentPage + 1) % movies.size,
-//                            animationSpec = tween(
-//                                durationMillis = 500,
-//                                easing = FastOutSlowInEasing
-//                            )
-//                        )
-//                    }
                 }
             }
         }

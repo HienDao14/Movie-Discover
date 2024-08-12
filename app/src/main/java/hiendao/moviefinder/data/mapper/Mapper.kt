@@ -1,12 +1,7 @@
 package hiendao.moviefinder.data.mapper
 
-import hiendao.moviefinder.data.local.model.CreditEntity
 import hiendao.moviefinder.data.local.model.MovieEntity
-import hiendao.moviefinder.data.local.model.TvSeriesEntity
 import hiendao.moviefinder.data.network.movie.model.collection.PartCollection
-import hiendao.moviefinder.data.network.movie.model.credit.Cast
-import hiendao.moviefinder.data.network.movie.model.credit.Crew
-import hiendao.moviefinder.data.network.movie.model.credit.detail.CreditDetail
 import hiendao.moviefinder.data.network.movie.model.credit.detail.MovieCast
 import hiendao.moviefinder.data.network.movie.model.credit.detail.MovieCrew
 import hiendao.moviefinder.data.network.movie.model.detail.MovieDetailDTO
@@ -14,32 +9,12 @@ import hiendao.moviefinder.data.network.movie.model.list.MovieDTO
 import hiendao.moviefinder.data.network.movie.model.list.MovieListResponse
 import hiendao.moviefinder.data.network.movie.model.list.MovieListWithDateResponse
 import hiendao.moviefinder.data.network.util.base_url.BaseUrl.BASE_IMAGE_URL
-import hiendao.moviefinder.domain.model.Credit
 import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.util.Category
 
 fun makeFullUrl(path: String): String {
     return "${BASE_IMAGE_URL}${path}"
-}
-
-
-fun MovieListWithDateResponse.toMovieListResponse(): MovieListResponse {
-    return MovieListResponse(
-        page, results, total_pages, total_results
-    )
-}
-
-fun List<MovieDTO>.toListMovieEntity(category: String, page: Int): List<MovieEntity> {
-    return this.mapIndexed { index, movieDTO ->
-        movieDTO.toMovieEntity(category, (page - 1) * 20 + index + 1)
-    }
-}
-
-fun List<MovieEntity>.toListMovie(): List<Movie> {
-    return this.map {
-        it.toMovie()
-    }
 }
 
 fun MovieDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = ""): MovieEntity {
@@ -116,6 +91,19 @@ fun MovieEntity.toMovie(): Movie {
         videos = videos?.split(",")?.map { it } ?: emptyList(),
         collectionId = collectionId,
         addedInFavorite = addedToFavorite == 1
+    )
+}
+
+fun MovieEntity.toMedia(): Media{
+    return Media(
+        id = id,
+        title = title,
+        posterPath = posterPath,
+        backdropPath = backdropPath,
+        genreIds = genreIds.split(",").map { it.toInt() },
+        voteAverage = voteAverage,
+        voteCount = voteCount,
+        mediaType = "Movie"
     )
 }
 
@@ -285,135 +273,6 @@ fun PartCollection.toMovie(): Movie {
     )
 }
 
-fun PartCollection.toTvSeriesEntity(): TvSeriesEntity{
-    return TvSeriesEntity(
-        adult = adult ?: false,
-        backdropPath = backdrop_path ?: "",
-        createdBy = "",
-        credits = "",
-        episodeRuntime = "",
-        firstAirDate = release_date ?: "",
-        genres = genre_ids.joinToString(",") { it.toString() } ?: "",
-        homepage = "",
-        id = id,
-        images = "",
-        inProduction = false,
-        languages = "",
-        lastAirDate = "",
-        lastEpisodeToAir = "",
-        name = title ?: "",
-        networks = "",
-        nextEpisodeToAir = "",
-        numberOfEpisodes = 0,
-        numberOfSeasons = 0,
-        originCountry = "",
-        originalLanguage = original_language ?: "",
-        originalName = original_title ?: "",
-        overview = overview ?: "",
-        popularity = popularity ?: 0.0,
-        posterPath = poster_path ?: "",
-        productionCompanies = "",
-        productionCountries = "",
-        seasons = "",
-        spokenLanguages = "",
-        status = "",
-        tagline = "",
-        type = "",
-        videos = "",
-        similar = "",
-        voteAverage = vote_average ?: 0.0,
-        voteCount = vote_count ?: 0
-    )
-}
-
-fun PartCollection.toMedia(): Media{
-    return Media(
-        id = id,
-        title = title,
-        posterPath = poster_path ?: "",
-        backdropPath = backdrop_path ?: "",
-        genreIds = genre_ids,
-        voteAverage = vote_average,
-        voteCount = vote_count,
-        mediaType = media_type
-    )
-}
-
-fun Cast.toCreditEntity(movieId: Int): CreditEntity {
-    return CreditEntity(
-        adult = adult ?: false,
-        character = character ?: "",
-        gender = gender ?: -1, //1 - nu, 2 - nam
-        id = id,
-        knownForDepartment = known_for_department ?: "",
-        name = name ?: "",
-        popularity = popularity ?: -1.0,
-        profilePath = profile_path ?: "",
-        department = "",
-        job = "",
-        type = "Cast",
-        movieId = movieId.toString(),
-        biography = "",
-        birthday = "",
-        deathday = "",
-        homepage = "",
-        placeOfBirth = "",
-        externalIds = ""
-    )
-}
-
-fun Crew.toCreditEntity(movieId: Int): CreditEntity {
-    return CreditEntity(
-        adult = adult ?: false,
-        character = "",
-        gender = gender ?: -1, //1 - nu, 2 - nam
-        id = id,
-        knownForDepartment = known_for_department ?: "",
-        name = name ?: "",
-        popularity = popularity ?: -1.0,
-        profilePath = profile_path ?: "",
-        department = department ?: "",
-        job = job ?: "",
-        type = "Crew",
-        movieId = movieId.toString(),
-        biography = "",
-        birthday = "",
-        deathday = "",
-        homepage = "",
-        placeOfBirth = "",
-        externalIds = ""
-    )
-}
-
-fun List<Cast>.toCreditEntity(movieId: Int): List<CreditEntity> {
-    return this.filter { it.character != null && !it.character.contains("(voice)") }.map {
-        it.toCreditEntity(movieId = movieId)
-    }
-}
-
-fun Cast.toCredit(movieId: Int): Credit {
-    return Credit(
-        adult = adult ?: false,
-        character = if (character == null) emptyList() else listOf(character),
-        gender = gender ?: -1, //1 - nu, 2 - nam
-        id = id,
-        knownForDepartment = known_for_department ?: "",
-        name = name ?: "",
-        popularity = popularity ?: -1.0,
-        profilePath = profile_path ?: "",
-        department = "",
-        job = "",
-        type = "Cast",
-        movieId = listOf(movieId.toString()),
-        biography = "",
-        birthday = "",
-        deathday = "",
-        homepage = "",
-        placeOfBirth = "",
-        externalIds = emptyList(),
-        addedInFavorite = false
-    )
-}
 
 fun MovieCast.toMovieEntity(category: Category, index: Int): MovieEntity {
     return MovieEntity(
@@ -483,96 +342,6 @@ fun MovieCrew.toMovieEntity(category: Category, index: Int): MovieEntity {
     )
 }
 
-fun CreditDetail.toCreditEntity(type: String): CreditEntity {
-    return CreditEntity(
-        adult = adult ?: false,
-        character = movie_credits?.cast?.filter { it?.character != null }
-            ?.joinToString(",") { it?.character!! } ?: "",
-        gender = gender ?: -1, //1 - nu, 2 - nam
-        id = id,
-        knownForDepartment = known_for_department ?: "",
-        name = name ?: "",
-        popularity = popularity ?: -1.0,
-        profilePath = profile_path ?: "",
-        department = "",
-        job = "",
-        type = type,
-        movieId = if (type == "Cast") {
-            movie_credits?.cast?.filter { it?.character != null }
-                ?.joinToString(",") { it?.id.toString() } ?: ""
-        } else {
-            movie_credits?.crew?.filter { it?.job == "Director" }
-                ?.joinToString(",") { it?.id.toString() } ?: ""
-        },
-        biography = biography ?: "",
-        birthday = birthday ?: "",
-        deathday = deathday.toString(),
-        homepage = homepage.toString(),
-        placeOfBirth = place_of_birth ?: "",
-        externalIds = if (external_ids != null) (external_ids.facebook_id.toString() + "," + external_ids.twitter_id.toString() + "," + external_ids.instagram_id.toString()) else ""
-    )
-}
-
-fun CreditDetail.toCredit(type: String): Credit {
-    return Credit(
-        adult = adult ?: false,
-        character = movie_credits?.cast?.filter { it?.character != null  }
-            ?.map { it?.character!! } ?: emptyList(),
-        gender = gender ?: -1, //1 - nu, 2 - nam
-        id = id,
-        knownForDepartment = known_for_department ?: "",
-        name = name ?: "",
-        popularity = popularity ?: -1.0,
-        profilePath = profile_path ?: "",
-        department = "",
-        job = "",
-        type = type,
-        movieId = movie_credits?.cast?.filter { it?.character != null  }
-            ?.map { it?.id.toString() } ?: emptyList(),
-        biography = biography ?: "",
-        birthday = birthday ?: "",
-        deathday = deathday.toString(),
-        homepage = homepage.toString(),
-        placeOfBirth = place_of_birth ?: "",
-        externalIds = if (external_ids != null) listOf(
-            external_ids.facebook_id.toString(),
-            external_ids.twitter_id.toString(),
-            external_ids.instagram_id.toString(),
-            external_ids.wikidata_id.toString()
-        ) else emptyList(),
-        addedInFavorite = false
-    )
-}
-
-fun CreditEntity.toCredit(): Credit {
-    return Credit(
-        adult = adult,
-        character = character.split(","),
-        gender = gender, //1 - nu, 2 - nam
-        id = id,
-        knownForDepartment = knownForDepartment,
-        name = name,
-        popularity = popularity,
-        profilePath = profilePath,
-        department = department,
-        job = job,
-        type = type,
-        movieId = movieId.split(","),
-        biography = biography,
-        birthday = birthday,
-        deathday = deathday.toString(),
-        homepage = homepage,
-        placeOfBirth = placeOfBirth,
-        externalIds = externalIds.split(","),
-        addedInFavorite = addedInFavorite == 1
-    )
-}
-
-fun List<CreditEntity>.toListCredit(): List<Credit> {
-    return this.map {
-        it.toCredit()
-    }
-}
 
 fun MovieDTO.toMedia(): Media{
     return Media(
@@ -598,6 +367,24 @@ fun Movie.toMedia(): Media{
         voteCount = voteCount,
         mediaType = "Movie"
     )
+}
+
+fun List<MovieDTO>.toListMovieEntity(category: String, page: Int): List<MovieEntity> {
+    return this.mapIndexed { index, movieDTO ->
+        movieDTO.toMovieEntity(category, (page - 1) * 20 + index + 1)
+    }
+}
+
+fun List<MovieEntity>.toListMovie(): List<Movie> {
+    return this.map {
+        it.toMovie()
+    }
+}
+
+fun List<MovieEntity>.entityToListMedia(): List<Media>{
+    return this.map {
+        it.toMedia()
+    }
 }
 
 fun List<Movie>.toListMedia(): List<Media>{

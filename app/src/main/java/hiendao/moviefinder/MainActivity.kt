@@ -27,16 +27,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
-import hiendao.moviefinder.presentation.MainScreen
-import hiendao.moviefinder.presentation.MovieViewModel
-import hiendao.moviefinder.presentation.creditDetail.CreditScreen
-import hiendao.moviefinder.presentation.creditDetail.CreditViewModel
-import hiendao.moviefinder.presentation.favorite.FavoriteViewModel
-import hiendao.moviefinder.presentation.movie.MoviesFullScreenWithPaged
-import hiendao.moviefinder.presentation.movieDetail.MovieDetailScreen
-import hiendao.moviefinder.presentation.movieDetail.MovieDetailViewModel
-import hiendao.moviefinder.presentation.tvSeriesDetail.SeriesDetailViewModel
-import hiendao.moviefinder.presentation.tvSeriesDetail.TvSeriesDetailScreen
+import hiendao.moviefinder.presentation.main.MainScreen
+import hiendao.moviefinder.presentation.main.MainViewModel
+import hiendao.moviefinder.presentation.detail.creditDetail.CreditScreen
+import hiendao.moviefinder.presentation.detail.creditDetail.CreditViewModel
+import hiendao.moviefinder.presentation.main.favorite.FavoriteViewModel
+import hiendao.moviefinder.presentation.pagedScreen.MoviesFullScreenWithPaged
+import hiendao.moviefinder.presentation.detail.movieDetail.MovieDetailScreen
+import hiendao.moviefinder.presentation.detail.movieDetail.MovieDetailViewModel
+import hiendao.moviefinder.presentation.pagedScreen.TvSeriesFullScreenWithPaged
+import hiendao.moviefinder.presentation.detail.tvSeriesDetail.SeriesDetailViewModel
+import hiendao.moviefinder.presentation.detail.tvSeriesDetail.TvSeriesDetailScreen
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.NavRoute
 import kotlinx.coroutines.delay
@@ -65,7 +66,7 @@ fun Navigation(
 ) {
     val navController = rememberNavController()
 
-    val mainViewModel = hiltViewModel<MovieViewModel>()
+    val mainViewModel = hiltViewModel<MainViewModel>()
     val movieDetailViewModel = hiltViewModel<MovieDetailViewModel>()
     val seriesDetailViewModel = hiltViewModel<SeriesDetailViewModel>()
     val creditViewModel = hiltViewModel<CreditViewModel>()
@@ -95,15 +96,22 @@ fun Navigation(
         composable(
             route = "${NavRoute.LISTING_SCREEN.name}?type={type}",
             arguments = listOf(
-                navArgument(name = "type"){
+                navArgument(name = "type") {
                     type = NavType.StringType
                 }
             )
-        ) {entry ->
+        ) { entry ->
             val type = entry.arguments?.getString("type")
             requireNotNull(type)
-            if(type == "Movie"){
+            if (type == "Movie") {
                 MoviesFullScreenWithPaged(
+                    type = type,
+                    navHostController = navController,
+                    uiState = mainUIState,
+                    onEvent = mainViewModel::onEvent
+                )
+            } else {
+                TvSeriesFullScreenWithPaged(
                     type = type,
                     navHostController = navController,
                     uiState = mainUIState,
@@ -115,11 +123,11 @@ fun Navigation(
         composable(
             route = "${NavRoute.DETAIL_SCREEN}?movieId={movieId}",
             arguments = listOf(
-                navArgument(name = "movieId"){
+                navArgument(name = "movieId") {
                     type = NavType.StringType
                 }
             )
-        ){entry ->
+        ) { entry ->
             val movieId = entry.arguments?.getString("movieId")
             requireNotNull(movieId)
 
@@ -129,26 +137,26 @@ fun Navigation(
                 delay(500)
             }
 
-            if(movieDetailState.movie != null && movieDetailState.movie.images.isNotEmpty() && movieDetailState.listCredit.isNotEmpty()){
+            if (movieDetailState.movie != null && movieDetailState.movie.images.isNotEmpty() && movieDetailState.listCredit.isNotEmpty()) {
                 MovieDetailScreen(
                     movie = movieDetailState.movie,
                     detailState = movieDetailState,
                     navHostController = navController,
                     onEvent = movieDetailViewModel::onEvent
                 )
-            } else if(movieDetailState.isLoading){
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface),
+            } else if (movieDetailState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
                     contentAlignment = Alignment.Center
-                ){
+                ) {
                     CircularProgressIndicator(
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(50.dp)
+                        modifier = Modifier.size(50.dp).align(Alignment.Center)
                     )
                 }
-            }
-            else if(movieDetailState.errorMsg != "") {
+            } else if (movieDetailState.errorMsg.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -168,11 +176,11 @@ fun Navigation(
         composable(
             route = "${NavRoute.DETAIL_SCREEN}?seriesId={seriesId}",
             arguments = listOf(
-                navArgument(name = "seriesId"){
+                navArgument(name = "seriesId") {
                     type = NavType.StringType
                 }
             )
-        ) {entry ->
+        ) { entry ->
             val seriesId = entry.arguments?.getString("seriesId")
             requireNotNull(seriesId)
 
@@ -182,26 +190,27 @@ fun Navigation(
                 delay(500)
             }
 
-            if(seriesDetailState.series != null && seriesDetailState.series.images.isNotEmpty() && seriesDetailState.credits.isNotEmpty()){
+            if (seriesDetailState.series != null && seriesDetailState.series.images.isNotEmpty() && seriesDetailState.credits.isNotEmpty()) {
                 //Series Screen Detail
                 TvSeriesDetailScreen(
                     series = seriesDetailState.series,
                     seriesDetailState = seriesDetailState,
-                    navHostController = navController
+                    navHostController = navController,
+                    onEvent = seriesDetailViewModel::onEvent
                 )
-            } else if(movieDetailState.isLoading){
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface),
+            } else if (movieDetailState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
                     contentAlignment = Alignment.Center
-                ){
+                ) {
                     CircularProgressIndicator(
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(50.dp)
+                        modifier = Modifier.size(50.dp).align(Alignment.Center)
                     )
                 }
-            }
-            else if(movieDetailState.errorMsg != "") {
+            } else if (movieDetailState.errorMsg != "") {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -221,11 +230,11 @@ fun Navigation(
         composable(
             route = "${NavRoute.CREDIT_SCREEN}?creditId={creditId}",
             arguments = listOf(
-                navArgument(name = "creditId"){
+                navArgument(name = "creditId") {
                     type = NavType.StringType
                 }
             )
-        ){entry ->
+        ) { entry ->
             val creditId = entry.arguments?.getString("creditId")
             requireNotNull(creditId)
 

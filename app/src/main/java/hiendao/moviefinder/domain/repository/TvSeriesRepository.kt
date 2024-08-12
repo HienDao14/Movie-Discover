@@ -7,9 +7,19 @@ import kotlinx.coroutines.flow.Flow
 
 interface TvSeriesRepository {
 
-    suspend fun getPopularTvSeries(page: Int = 1): Flow<Resource<List<TvSeries>>>
+    suspend fun getPopularTvSeries(
+        page: Int = 1,
+        isRefresh: Boolean = false,
+        shouldCallNetwork: Boolean = false
+    ): Flow<Resource<List<Media>>>
 
     suspend fun getTrendingDayTvSeries(): Flow<Resource<List<TvSeries>>>
+
+    suspend fun getTopRatedTvSeries(
+        page: Int = 1,
+        isRefresh: Boolean = false,
+        shouldCallNetwork: Boolean = false
+    ): Flow<Resource<List<Media>>>
 
     suspend fun discoverTvSeries(
         firstAirDateLte: String,
@@ -23,4 +33,8 @@ interface TvSeriesRepository {
         isRefresh: Boolean,
         id: Int
     ): Flow<Resource<TvSeries>>
+
+    suspend fun changeFavorite(
+        favorite: Int, addedDate: String, seriesId: Int
+    ): Flow<Resource<Boolean>>
 }

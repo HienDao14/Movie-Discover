@@ -8,12 +8,12 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import hiendao.moviefinder.data.local.CreditDAO
-import hiendao.moviefinder.data.local.CreditDatabase
-import hiendao.moviefinder.data.local.MovieDAO
-import hiendao.moviefinder.data.local.MovieDatabase
-import hiendao.moviefinder.data.local.TvSeriesDAO
-import hiendao.moviefinder.data.local.TvSeriesDatabase
+import hiendao.moviefinder.data.local.dao.CreditDAO
+import hiendao.moviefinder.data.local.database.CreditDatabase
+import hiendao.moviefinder.data.local.dao.MovieDAO
+import hiendao.moviefinder.data.local.database.MovieDatabase
+import hiendao.moviefinder.data.local.dao.TvSeriesDAO
+import hiendao.moviefinder.data.local.database.TvSeriesDatabase
 import hiendao.moviefinder.data.network.movie.MovieApi
 import hiendao.moviefinder.data.network.search.SearchApi
 import hiendao.moviefinder.data.network.tvseries.TvSeriesApi
@@ -70,7 +70,7 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideMovieDatabase(app: Application): MovieDatabase{
+    fun provideMovieDatabase(app: Application): MovieDatabase {
         return Room.databaseBuilder(
             app,
             MovieDatabase::class.java,
@@ -82,7 +82,7 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideCreditDatabase(app: Application): CreditDatabase{
+    fun provideCreditDatabase(app: Application): CreditDatabase {
         return Room.databaseBuilder(
             app,
             CreditDatabase::class.java,
@@ -94,7 +94,7 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideTvSeriesDatabase(app: Application): TvSeriesDatabase{
+    fun provideTvSeriesDatabase(app: Application): TvSeriesDatabase {
         return Room.databaseBuilder(
             app,
             TvSeriesDatabase::class.java,
@@ -108,7 +108,7 @@ class AppModule {
     @Singleton
     fun provideMovieDAO(
         movieDatabase: MovieDatabase
-    ): MovieDAO{
+    ): MovieDAO {
         return movieDatabase.dao
     }
 
@@ -116,7 +116,7 @@ class AppModule {
     @Singleton
     fun provideCreditDAO(
         creditDatabase: CreditDatabase
-    ): CreditDAO{
+    ): CreditDAO {
         return creditDatabase.creditDao
     }
 
@@ -124,7 +124,7 @@ class AppModule {
     @Singleton
     fun provideTvSeriesDAO(
         tvSeriesDatabase: TvSeriesDatabase
-    ): TvSeriesDAO{
+    ): TvSeriesDAO {
         return tvSeriesDatabase.dao
     }
 

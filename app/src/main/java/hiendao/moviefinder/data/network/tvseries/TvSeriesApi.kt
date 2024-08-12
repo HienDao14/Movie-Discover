@@ -26,8 +26,13 @@ interface TvSeriesApi {
     ): TvSeriesListResponse
 
     @GET("trending/tv/{time_window}")
-    suspend fun getTrendingTvSeries(
+    suspend fun getTrendingDayTvSeries(
         @Path("time_window") timeWindow : String ?= "day"
+    ): TvSeriesListResponse
+
+    @GET("trending/tv/{time_window}")
+    suspend fun getTrendingWeekTvSeries(
+        @Path("time_window") timeWindow : String ?= "week"
     ): TvSeriesListResponse
 
     @GET("tv/{series_id}")
