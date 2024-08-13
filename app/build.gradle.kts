@@ -28,14 +28,7 @@ android {
         val properties = Properties()
         properties.load(keystore.inputStream())
 
-        val apiKey = properties.getProperty("API_KEY") ?: ""
         val accessToken = properties.getProperty("ACCESS_TOKEN") ?: ""
-
-        buildConfigField(
-            type = "String",
-            name = "API_KEY",
-            value = apiKey
-        )
 
         buildConfigField(
             type = "String",
