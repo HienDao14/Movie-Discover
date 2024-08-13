@@ -3,7 +3,6 @@ package hiendao.moviefinder.presentation.detail.creditDetail
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -69,7 +68,7 @@ import hiendao.moviefinder.presentation.uiEvent.CreditScreenEvent
 import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.convert.convertDateFormat
 import hiendao.moviefinder.util.shared_components.CustomImage
-import hiendao.moviefinder.util.shared_components.ImageScreen
+import hiendao.moviefinder.util.shared_components.ImagesScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -136,13 +135,12 @@ fun CreditScreen(
                 .padding(it)
         ) {
             if (showImageScreen && imageUriToShow.isNotEmpty()) {
-                ImageScreen(
-                    uri = imageUriToShow,
-                    title = imageTitleToShow,
+                ImagesScreen(
+                    images = listOf(imageUriToShow),
                     setShowImage = {
                         showImageScreen = it
                     },
-                    modifier = Modifier.fillMaxSize()
+                    isPoster = true
                 )
             }
             if (creditState.isLoading && creditState.loadingFor == "credit_detail") {
@@ -384,7 +382,7 @@ fun CreditScreenLoaded(
                     },
                     style = smallFontSize,
                     overflow = TextOverflow.Ellipsis,
-                    maxLines = 10,
+                    maxLines = 5,
                     modifier = Modifier
                         .clickable {
                             ellipseState = true

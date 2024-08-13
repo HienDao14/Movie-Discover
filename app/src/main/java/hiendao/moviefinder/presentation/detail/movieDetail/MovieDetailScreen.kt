@@ -74,7 +74,7 @@ import hiendao.moviefinder.util.appBarState.ExitUntilCollapsedState
 import hiendao.moviefinder.util.appBarState.ToolbarState
 import hiendao.moviefinder.util.convert.getGenresFromCode
 import hiendao.moviefinder.util.shared_components.CustomImage
-import hiendao.moviefinder.util.shared_components.ImagesSection2
+import hiendao.moviefinder.util.shared_components.ImagesScreen
 import hiendao.moviefinder.util.shared_components.RatingBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -149,7 +149,7 @@ fun MovieDetailScreen(
             .nestedScroll(refreshState.nestedScrollConnection)
     ) {
         if (showImageScreen && images.isNotEmpty()) {
-            ImagesSection2(
+            ImagesScreen(
                 images = images,
                 setShowImage = {
                     showImageScreen = it

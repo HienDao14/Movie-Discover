@@ -65,13 +65,14 @@ import hiendao.moviefinder.presentation.state.SeriesDetailState
 import hiendao.moviefinder.presentation.detail.tvSeriesDetail.overview.TvSeriesOverviewSection
 import hiendao.moviefinder.presentation.uiEvent.SeriesDetailEvent
 import hiendao.moviefinder.util.Constant
+import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.appBarState.CustomAppBar
 import hiendao.moviefinder.util.appBarState.ExitUntilCollapsedState
 import hiendao.moviefinder.util.appBarState.ToolbarState
 import hiendao.moviefinder.util.convert.convertDateFormat
 import hiendao.moviefinder.util.convert.getGenresFromCode
 import hiendao.moviefinder.util.shared_components.CustomImage
-import hiendao.moviefinder.util.shared_components.ImagesSection2
+import hiendao.moviefinder.util.shared_components.ImagesScreen
 import hiendao.moviefinder.util.shared_components.RatingBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -150,7 +151,7 @@ fun TvSeriesDetailScreen(
             .nestedScroll(refreshState.nestedScrollConnection)
     ) {
         if (showImageScreen) {
-            ImagesSection2(
+            ImagesScreen(
                 images = images,
                 setShowImage = {
                     showImageScreen = it
@@ -187,6 +188,9 @@ fun TvSeriesDetailScreen(
                 images.addAll(uri)
                 imageTitleToShow = "\"${series.name}\" $title"
                 isPoster = title == "Poster"
+            },
+            navigateToCredit = {creditId ->
+                navHostController.navigate("${NavRoute.CREDIT_SCREEN}?creditId=${creditId}")
             }
         )
 
@@ -229,7 +233,8 @@ fun TvSeriesDetailSection(
     scrollState: ScrollState,
     detailState: SeriesDetailState,
     changeFavoriteClick: (Int, String, Int) -> Unit,
-    showImage: (List<String>, String) -> Unit
+    showImage: (List<String>, String) -> Unit,
+    navigateToCredit: (Int) -> Unit
 ){
 
     val pagerState = rememberPagerState(
@@ -332,7 +337,7 @@ fun TvSeriesDetailSection(
 
                 2 -> {
                     CreditSection(id = series.id, credits = detailState.credits) {
-
+                        navigateToCredit(it)
                     }
                 }
 
