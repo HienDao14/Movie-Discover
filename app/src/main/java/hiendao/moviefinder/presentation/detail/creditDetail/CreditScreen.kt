@@ -51,8 +51,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -350,17 +354,34 @@ fun CreditScreenLoaded(
 
             if (ellipseState) {
                 Text(
-                    text = credit.biography,
+                    text = buildAnnotatedString {
+                        append(
+                            AnnotatedString(
+                                text = credit.biography,
+                                paragraphStyle = ParagraphStyle(
+                                    textIndent = TextIndent(firstLine = 20.sp, restLine = 0.sp)
+                                )
+                            )
+                        )
+                    },
                     style = smallFontSize,
                     modifier = Modifier
                         .clickable {
                             ellipseState = false
                         }
-                        .padding(start = 10.dp)
                 )
             } else {
                 Text(
-                    text = credit.biography,
+                    text = buildAnnotatedString {
+                        append(
+                            AnnotatedString(
+                                text = credit.biography,
+                                paragraphStyle = ParagraphStyle(
+                                    textIndent = TextIndent(firstLine = 20.sp, restLine = 0.sp)
+                                )
+                            )
+                        )
+                    },
                     style = smallFontSize,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 10,
@@ -368,7 +389,6 @@ fun CreditScreenLoaded(
                         .clickable {
                             ellipseState = true
                         }
-                        .padding(start = 10.dp)
                 )
             }
         }
