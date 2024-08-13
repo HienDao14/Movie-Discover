@@ -1,3 +1,5 @@
+![](media/landing_page_MovieFinder.png)
+
 # MovieFinder 
 ## Overview
 
