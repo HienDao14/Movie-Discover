@@ -11,14 +11,16 @@ MovieFinder is an Android application designed to help users discover movies and
 - **Detailed Information**: View comprehensive details including plot summaries, release dates, ratings, cast, and crew information.
 - **Search**: Quickly search for specific movies or TV series by title.
 - **Save Favorites**: Save your favorite movies and TV series to local storage, so you can easily access them anytime, even offline.
+- **Data Sync**: The app uses WorkManager to automatically sync data with the server every hour, ensuring you always have the latest information.
 
 ## Technologies Used
-- **Programming language**: Kotlin
-- **UI Framework**: Jetpack Compose
-- **Networking**: Retrofit and OkHttpClient for API calls
-- **Dependency Injection**: Dagger-Hilt
-- **Asynchronous Programming**: Flow over Coroutine for managing asynchronous data streams
-- **Local Storage**: Room Database for saving favorite movies and TV series
+- **Programming language**: *Kotlin*
+- **UI Framework**: *Jetpack Compose*
+- **Networking**: *Retrofit* and *OkHttpClient* for API calls
+- **Dependency Injection**: *Dagger-Hilt*
+- **Asynchronous Programming**: *Flow* over *Coroutine* for managing asynchronous data streams
+- **Local Storage**: *Room Database* for saving favorite movies and TV series
+- **Data Sync**: *WorkManager* for scheduling hourly data synchronization
 - **API**: Public api of The Movie Database (TMDb). Credit: [TMDb](https://developer.themoviedb.org/docs/getting-started)
 
 ## Requirements
@@ -37,7 +39,7 @@ MovieFinder is an Android application designed to help users discover movies and
 - Sign up or log in to your account.
 - Generate a new Access Token.
 3. **Add Access Token:**
-- Create a file named `**hiendao.properties**` in the root directory of the project.
+- Create a file named **`hiendao.properties`** in the root directory of the project.
 - Add your TMDb Access Token to this file:
     ```
     ACCESS_TOKEN = "your_access_token_here"
