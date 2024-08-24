@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -70,8 +71,9 @@ fun ListMediaSection(
                 .padding(horizontal = 5.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            items(listMedia.size) { index ->
-                val media = listMedia[index]
+            items(listMedia, key = {
+                it.id
+            }) { media ->
                 CustomImage(
                     imageUrl = media.posterPath,
                     width = 150.dp,
@@ -88,6 +90,3 @@ fun ListMediaSection(
         }
     }
 }
-//Trending Day
-//Special (Popular)
-//Recommend (Top Rated)

@@ -1,5 +1,6 @@
 package hiendao.moviefinder.presentation.detail.tvSeriesDetail.overview
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -32,7 +34,8 @@ import hiendao.moviefinder.util.shared_components.RowInfoSection
 @Composable
 fun TvSeriesOverviewSection(
     modifier: Modifier = Modifier,
-    series: TvSeries
+    series: TvSeries,
+    navigate: (String) -> Unit
 ) {
     var overviewExpanded by remember {
         mutableStateOf(false)
@@ -92,7 +95,8 @@ fun TvSeriesOverviewSection(
                 fontSize = 14.sp,
                 fontStyle = FontStyle.Italic,
                 modifier = Modifier
-                    .fillMaxWidth().padding(horizontal = 20.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
                 textAlign = TextAlign.Center
 
             )
@@ -150,6 +154,34 @@ fun TvSeriesOverviewSection(
             )
         }
 
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Visit homepage: ",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = series.homepage,
+                textDecoration = TextDecoration.Underline,
+                color = Color.Blue,
+                modifier = Modifier
+                    .padding(start = 10.dp)
+                    .clickable {
+                        navigate(series.homepage)
+                    }
+                    .basicMarquee(
+                        delayMillis = 2_000
+                    ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 
 }

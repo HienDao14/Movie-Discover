@@ -5,11 +5,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +36,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
+import eu.kanade.presentation.webview.WebViewScreenContent
 import hiendao.moviefinder.presentation.main.MainScreen
 import hiendao.moviefinder.presentation.main.MainViewModel
 import hiendao.moviefinder.presentation.detail.creditDetail.CreditScreen
@@ -40,16 +57,45 @@ import hiendao.moviefinder.presentation.detail.tvSeriesDetail.SeriesDetailViewMo
 import hiendao.moviefinder.presentation.detail.tvSeriesDetail.TvSeriesDetailScreen
 import hiendao.moviefinder.ui.theme.MovieFinderTheme
 import hiendao.moviefinder.util.NavRoute
+import hiendao.moviefinder.worker.SyncDataWorker
 import kotlinx.coroutines.delay
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private lateinit var workManager : WorkManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        workManager = WorkManager.getInstance(applicationContext)
+        val syncRequest = PeriodicWorkRequestBuilder<SyncDataWorker>(Duration.ofHours(1))
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 5000L, TimeUnit.MILLISECONDS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+//
+//        val syncRequest = OneTimeWorkRequestBuilder<SyncDataWorker>()
+//            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+//            .setInitialDelay(Duration.ofSeconds(10))
+//            .build()
+
         setContent {
             MovieFinderTheme {
                 Surface {
+                    workManager.enqueueUniquePeriodicWork(
+                        "sync_data",
+                        ExistingPeriodicWorkPolicy.UPDATE,
+                        syncRequest
+                    )
+//                    workManager.enqueueUniqueWork(
+//                        "sync_data",
+//                        ExistingWorkPolicy.REPLACE,
+//                        syncRequest
+//                    )
                     Navigation(
                         modifier = Modifier.fillMaxSize()
                     )
@@ -145,30 +191,46 @@ fun Navigation(
                     onEvent = movieDetailViewModel::onEvent
                 )
             } else if (movieDetailState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(50.dp).align(Alignment.Center)
-                    )
+                Box(modifier = Modifier.fillMaxSize().padding(top = 60.dp)){
+                    Snackbar(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .size(height = 50.dp, width = 200.dp)
+                            .align(Alignment.TopCenter)
+                    ) {
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Loading...")
+                        }
+                    }
                 }
             } else if (movieDetailState.errorMsg.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Something went wrong",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 19.sp
-                    )
+                Box(modifier = Modifier.fillMaxSize().padding(top = 60.dp)){
+                    Snackbar(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .size(height = 50.dp, width = 200.dp)
+                            .align(Alignment.TopCenter)
+                    ) {
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Some error occur!!! Pull to refresh", fontSize = 13.sp)
+                        }
+                    }
                 }
             }
         }
@@ -198,31 +260,47 @@ fun Navigation(
                     navHostController = navController,
                     onEvent = seriesDetailViewModel::onEvent
                 )
-            } else if (movieDetailState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(50.dp).align(Alignment.Center)
-                    )
+            } else if (seriesDetailState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize().padding(top = 60.dp)){
+                    Snackbar(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .size(height = 50.dp, width = 200.dp)
+                            .align(Alignment.TopCenter)
+                    ) {
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Loading...")
+                        }
+                    }
                 }
-            } else if (movieDetailState.errorMsg != "") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Something went wrong",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 19.sp
-                    )
+            } else if (!seriesDetailState.errorMsg.isNullOrEmpty()) {
+                Box(modifier = Modifier.fillMaxSize().padding(top = 60.dp)){
+                    Snackbar(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .size(height = 50.dp, width = 200.dp)
+                            .align(Alignment.TopCenter)
+                    ) {
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Some error occur!!! Pull to refresh", fontSize = 13.sp)
+                        }
+                    }
                 }
             }
         }
@@ -248,6 +326,27 @@ fun Navigation(
                 creditState = creditState,
                 onEvent = creditViewModel::onEvent,
                 navHostController = navController
+            )
+        }
+
+        composable(
+            route = "${NavRoute.WEB_VIEW}?url={url}",
+            arguments = listOf(
+                navArgument(name = "url"){
+                    type = NavType.StringType
+                }
+            )
+        ){entry ->
+            val url = entry.arguments?.getString("url")
+            requireNotNull(url)
+
+            WebViewScreenContent(
+                onNavigateUp = {
+                    navController.navigateUp()
+                },
+                initialTitle = "WebView",
+                url = url,
+                onUrlChange = {}
             )
         }
     }

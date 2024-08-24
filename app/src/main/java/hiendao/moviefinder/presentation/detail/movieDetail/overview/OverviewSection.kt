@@ -1,5 +1,6 @@
 package hiendao.moviefinder.presentation.detail.movieDetail.overview
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,11 +26,14 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import hiendao.moviefinder.domain.model.Movie
+import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.convert.ConvertToMillion
 import hiendao.moviefinder.util.shared_components.RowInfoSection
 
@@ -36,7 +41,8 @@ import hiendao.moviefinder.util.shared_components.RowInfoSection
 @Composable
 fun OverviewSection(
     modifier: Modifier = Modifier,
-    movie: Movie
+    movie: Movie,
+    navigate: (String) -> Unit
 ) {
     var overviewExpanded by remember {
         mutableStateOf(false)
@@ -90,7 +96,8 @@ fun OverviewSection(
                 fontSize = 14.sp,
                 fontStyle = FontStyle.Italic,
                 modifier = Modifier
-                    .fillMaxWidth().padding(horizontal = 20.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
                 textAlign = TextAlign.Center
 
             )
@@ -141,6 +148,35 @@ fun OverviewSection(
                 modifier = Modifier.clickable {
                     overviewExpanded = true
                 }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Visit homepage: ",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = movie.homepage,
+                textDecoration = TextDecoration.Underline,
+                color = Color.Blue,
+                modifier = Modifier
+                    .padding(start = 10.dp)
+                    .clickable {
+                        navigate(movie.homepage)
+                    }
+                    .basicMarquee(
+                        delayMillis = 2_000
+                    ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

@@ -96,11 +96,11 @@ fun MainScreen(
     )
 
     //Search
-    var searchText by remember {
+    val searchText = rememberSaveable() {
         mutableStateOf("")
     }
 
-    var searchBarActive by remember {
+    val searchBarActive = rememberSaveable {
         mutableStateOf(false)
     }
     val searchViewModel = hiltViewModel<SearchViewModel>()
@@ -125,8 +125,8 @@ fun MainScreen(
                             results?.get(0)
                         }
                 result?.let {
-                    searchBarActive = true
-                    searchText = it
+                    searchBarActive.value = true
+                    searchText.value = it
                     searchViewModel.onEvent(SearchEvent.OnQueryChange(it))
                 }
             }
@@ -192,18 +192,17 @@ fun MainScreen(
             }
 
 
-            LaunchedEffect(searchBarActive) {
-                if (!searchBarActive) {
-                    println("Search bar close")
-                    searchText = ""
+            LaunchedEffect(searchBarActive.value) {
+                if (!searchBarActive.value) {
+                    searchText.value = ""
                     searchViewModel.onEvent(SearchEvent.OnExit("Search Screen"))
                 }
             }
 
             SearchBar(
-                query = searchText,
+                query = searchText.value,
                 onQueryChange = {
-                    searchText = it
+                    searchText.value = it
                     if (it.isNotEmpty()) {
                         searchViewModel.onEvent(SearchEvent.OnQueryChange(it))
                     } else {
@@ -213,18 +212,17 @@ fun MainScreen(
                 onSearch = {
                     searchViewModel.onEvent(SearchEvent.OnQueryChange(it))
                 },
-                active = searchBarActive,
+                active = searchBarActive.value,
                 onActiveChange = {
-                    searchBarActive = it
+                    searchBarActive.value = it
                 },
                 placeholder = {
                     Text(text = "Search a movie or tv series", fontSize = 15.sp)
                 },
                 leadingIcon = {
-                    if (searchBarActive) {
+                    if (searchBarActive.value) {
                         IconButton(onClick = {
-                            searchBarActive = false
-//                        searchText = ""
+                            searchBarActive.value = false
                         }) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBackIosNew,
@@ -265,14 +263,14 @@ fun MainScreen(
                                 contentDescription = "Voice Search"
                             )
                         }
-                        if (searchBarActive) {
+                        if (searchBarActive.value) {
                             Spacer(modifier = Modifier.width(5.dp))
                             IconButton(onClick = {
-                                if (searchText.isNotEmpty()) {
-                                    searchText = ""
+                                if (searchText.value.isNotEmpty()) {
+                                    searchText.value = ""
                                     searchViewModel.onEvent(SearchEvent.OnExit("Search Screen"))
                                 } else {
-                                    searchBarActive = false
+                                    searchBarActive.value = false
                                 }
                             }) {
                                 Icon(

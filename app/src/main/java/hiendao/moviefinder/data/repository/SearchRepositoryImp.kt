@@ -8,6 +8,7 @@ import hiendao.moviefinder.data.mapper.toTvSeriesEntity
 import hiendao.moviefinder.data.network.search.SearchApi
 import hiendao.moviefinder.domain.model.Media
 import hiendao.moviefinder.domain.repository.SearchRepository
+import hiendao.moviefinder.util.Category
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -32,8 +33,27 @@ class SearchRepositoryImp @Inject constructor(
 
                 response.results.forEach { searchDTO ->
                     if(searchDTO.media_type == "movie"){
-                        val movieEntity = searchDTO.toMovieEntity()
-                        movieDAO.insertMovie(movieEntity)
+                        val entity = movieDAO.getMovieWithId(searchDTO.id)
+                        entity?.let {
+                            val category =
+                                if (it.category.contains(Category.MOVIE.name)) it.category
+                                else it.category + Category.MOVIE.name
+                            movieDAO.upsertMovie(
+                                searchDTO.toMovieEntity(
+                                    category = category,
+                                    index = it.categoryIndex,
+                                    favorite = it.addedToFavorite,
+                                    favoriteDate = it.addedInFavoriteDate,
+                                    categoryAddedDate = it.categoryDateAdded
+                                )
+                            )
+                        } ?: movieDAO.upsertMovie(
+                            searchDTO.toMovieEntity(
+                                category = Category.MOVIE.name,
+                                index = 10000,
+                                categoryAddedDate = "empty"
+                            )
+                        )
                     } else {
                         //"Insert to tv series database"
                         val series = searchDTO.toTvSeriesEntity()

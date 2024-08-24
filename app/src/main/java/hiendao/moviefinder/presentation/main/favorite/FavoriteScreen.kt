@@ -100,7 +100,6 @@ fun FavoriteScreen(
                         if (index >= movies.size - 1 && !favoriteScreenState.isLoading) {
                             onEvent(FavoriteScreenEvent.OnPaginate("Movie"))
                         }
-
                     }
                 }
 

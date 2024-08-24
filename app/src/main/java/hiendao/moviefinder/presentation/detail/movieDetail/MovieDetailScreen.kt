@@ -64,6 +64,7 @@ import hiendao.moviefinder.presentation.detail.creditSection.CreditSection
 import hiendao.moviefinder.presentation.detail.imageSection.ImageSection
 import hiendao.moviefinder.presentation.detail.movieDetail.overview.OverviewSection
 import hiendao.moviefinder.presentation.detail.recommendationSection.RecommendationSection
+import hiendao.moviefinder.presentation.detail.videoSection.VideoSection
 import hiendao.moviefinder.presentation.state.MovieDetailState
 import hiendao.moviefinder.presentation.uiEvent.MovieDetailEvent
 import hiendao.moviefinder.util.Constant.MaxToolbarHeight
@@ -191,6 +192,9 @@ fun MovieDetailScreen(
             },
             changeFavoriteClick = { favorite, date, movieId ->
                 onEvent(MovieDetailEvent.AddToFavorite(favorite, date, movieId))
+            },
+            onHomepageClick = {url ->
+                navHostController.navigate("${NavRoute.WEB_VIEW}?url=$url")
             }
         )
 
@@ -236,7 +240,8 @@ fun MovieDetailSection(
     movieItemClick: (Int) -> Unit,
     creditItemClick: (Int) -> Unit,
     changeFavoriteClick: (Int, String, Int) -> Unit,
-    showImage: (List<String>, String) -> Unit
+    showImage: (List<String>, String) -> Unit,
+    onHomepageClick: (String) -> Unit
 ) {
 
     val pagerState = rememberPagerState(
@@ -268,7 +273,7 @@ fun MovieDetailSection(
                 width = 120.dp,
                 height = 220.dp,
                 onClick = {
-                    showImage(listOf(movie.posterPath) , "Poster")
+                    showImage(listOf(movie.posterPath), "Poster")
                 }
             )
 
@@ -324,7 +329,9 @@ fun MovieDetailSection(
         ) { page ->
             when (page) {
                 0 -> {
-                    OverviewSection(movie = movie, modifier = Modifier.fillMaxWidth())
+                    OverviewSection(movie = movie, modifier = Modifier.fillMaxWidth(), navigate = {url ->
+                        onHomepageClick(url)
+                    })
                 }
 
                 1 -> {
@@ -367,7 +374,11 @@ fun MovieDetailSection(
                     )
                 }
 
-                4 -> {}
+                4 -> {
+                    VideoSection(keys = movie.videos) {
+
+                    }
+                }
             }
         }
 
@@ -418,6 +429,9 @@ fun PreviewDetailScreen() {
 
         },
         changeFavoriteClick = { _, _, _ ->
+
+        },
+        onHomepageClick = {
 
         }
     )

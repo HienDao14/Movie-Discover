@@ -9,11 +9,9 @@ data class MainUIState(
     val isLoading: Boolean = false,
     val isRefresh: Boolean = false,
     val errorMsg: String? = null,
-    val moviesPaged : Flow<PagingData<Movie>>?= null,
-    val popularMovies: List<Movie> = emptyList(),
+    val topRatedMovies: List<Movie> = emptyList(),
     val trendingDayMovies: List<Movie> = emptyList(),
     val trendingWeekMovies: List<Movie> = emptyList(),
-    val topRatedMovies: List<Movie> = emptyList(),
 
     //Discover
     val discoverMedia: List<Media> = emptyList(),
@@ -25,7 +23,4 @@ data class MainUIState(
     val pagingType: String = "",
     val popularTvSeries: List<Media> = emptyList(),
     val topRatedTvSeries: List<Media> = emptyList(),
-
-    val callApiInNewDate: Boolean = false,
-    val didCheckDate: Boolean = false
 )

@@ -26,6 +26,12 @@ pagingRuntime = "3.3.0"
 pagingCompose = "3.3.0"
 youtubePlayer = "12.1.0"
 toolbar = "2.3.5"
+constrainLayout = "2.2.0-alpha14"
+constrainLayoutCompose = "1.1.0-alpha14"
+workVersion = "2.9.1"
+hiltWorkVersion = "1.2.0"
+webview = "0.33.6"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -67,12 +73,17 @@ hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-comp
 hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltNavigation" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 androidx-paging-runtime = {group = "androidx.paging", name = "paging-runtime-ktx", version.ref = "pagingRuntime"}
 androidx-paging-compose = {group = "androidx.paging", name = "paging-compose", version.ref = "pagingCompose"}
 
 youtube-player = {group = "com.pierfrancescosoffritti.androidyoutubeplayer", name = "core", version.ref = "youtubePlayer"}
+
+androidx-constrain = {group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constrainLayout"}
+
+androidx-work = {group = "androidx.work", name = "work-runtime-ktx", version.ref = "workVersion"}
+androidx-hilt-work = {group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWorkVersion"}
+webview-kevinnzou = {group = "io.github.kevinnzou", name = "compose-webview", version.ref = "webview"}
 
 onebone-toolbar = {group = "me.onebone", name = "toolbar-compose", version.ref = "toolbar"}
 [plugins]

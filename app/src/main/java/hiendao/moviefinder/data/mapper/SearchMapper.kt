@@ -8,7 +8,7 @@ import hiendao.moviefinder.domain.model.Movie
 import hiendao.moviefinder.domain.model.SearchModel
 import hiendao.moviefinder.util.Category
 
-fun SearchDTO.toMovieEntity(): MovieEntity{
+fun SearchDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = "",  categoryAddedDate : String = ""): MovieEntity{
     return MovieEntity(
         id = id,
         adult = adult ?: false,
@@ -34,11 +34,14 @@ fun SearchDTO.toMovieEntity(): MovieEntity{
         originCountry = "",
         similar = "",
         images = "",
-        category = Category.MOVIE.name,
-        categoryIndex = -1,
+        category = category,
+        categoryIndex = index,
         videos = "",
         collectionId = -1,
-        credits = ""
+        credits = "",
+        addedToFavorite = favorite,
+        addedInFavoriteDate = favoriteDate,
+        categoryDateAdded = categoryAddedDate
     )
 }
 

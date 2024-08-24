@@ -1,5 +1,6 @@
 package hiendao.moviefinder.data.repository
 
+import android.util.Log
 import hiendao.moviefinder.data.local.dao.CreditDAO
 import hiendao.moviefinder.data.local.dao.MovieDAO
 import hiendao.moviefinder.data.local.dao.TvSeriesDAO
@@ -17,6 +18,7 @@ import hiendao.moviefinder.util.Category
 import hiendao.moviefinder.util.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 class MovieRepositoryImp @Inject constructor(
@@ -25,6 +27,49 @@ class MovieRepositoryImp @Inject constructor(
     private val creditDAO: CreditDAO,
     private val tvSeriesDAO: TvSeriesDAO
 ) : MovieRepository {
+
+    override suspend fun getTopRatedMoviesRemote(page: Int, isRefresh: Boolean): List<Movie> {
+        val remoteMovies = try {
+            movieApi.getTopRatedMovies(page = page)
+        } catch (e: Exception) {
+            e.printStackTrace()
+          return emptyList()
+        }
+        if(isRefresh){
+            movieDAO.deleteExistCategory(Category.TOP_RATED.name, "%${Category.TOP_RATED.name}%")
+        }
+
+        remoteMovies.results.let { movies ->
+            val moviesResult = movies.map {
+                it.toMovie()
+            }
+            movies.forEachIndexed { index, movie ->
+                val entity = movieDAO.getMovieWithId(movie.id)
+                entity?.let {
+                    val category =
+                        if (it.category.contains(Category.TOP_RATED.name)) it.category
+                        else it.category + Category.TOP_RATED.name
+                    movieDAO.upsertMovie(
+                        movie.toMovieEntity(
+                            category = category,
+                            index = (remoteMovies.page - 1) * 20 + index,
+                            favorite = it.addedToFavorite,
+                            favoriteDate = it.addedInFavoriteDate,
+                            categoryAddedDate = LocalDateTime.now().toString()
+                        )
+                    )
+                } ?: movieDAO.upsertMovie(
+                    movie.toMovieEntity(
+                        category = Category.TOP_RATED.name,
+                        index = (remoteMovies.page - 1) * 20 + index,
+                        categoryAddedDate = LocalDateTime.now().toString()
+                    )
+                )
+            }
+
+           return moviesResult
+        }
+    }
 
     override suspend fun getTopRatedMovies(
         page: Int,
@@ -35,42 +80,14 @@ class MovieRepositoryImp @Inject constructor(
             emit(Resource.Loading())
 
             if (isRefresh || shouldCallNetwork) {
-                val remoteMovies = try {
-                    movieApi.getTopRatedMovies(page = page)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+
+                val result = getTopRatedMoviesRemote(page, true)
+                if(result.isEmpty()){
                     emit(Resource.Error("Couldn't load data"))
                     emit(Resource.Loading(false))
                     return@flow
-                }
-
-                remoteMovies.results.let { movies ->
-                    val moviesResult = movies.map {
-                        it.toMovie()
-                    }
-                    movies.forEachIndexed { index, movie ->
-                        val entity = movieDAO.getMovieWithId(movie.id)
-                        entity?.let {
-                            val category =
-                                if (it.category.contains(Category.TOP_RATED.name)) it.category
-                                else it.category + Category.TOP_RATED.name
-                            movieDAO.upsertMovie(
-                                movie.toMovieEntity(
-                                    category = category,
-                                    index = (remoteMovies.page - 1) * 20 + index,
-                                    favorite = it.addedToFavorite,
-                                    favoriteDate = it.addedInFavoriteDate
-                                )
-                            )
-                        } ?: movieDAO.upsertMovie(
-                            movie.toMovieEntity(
-                                category = Category.TOP_RATED.name,
-                                index = (remoteMovies.page - 1) * 20 + index
-                            )
-                        )
-                    }
-
-                    emit(Resource.Success(moviesResult))
+                } else {
+                    emit(Resource.Success(result))
 
                     emit(Resource.Loading(false))
                     return@flow
@@ -91,44 +108,16 @@ class MovieRepositoryImp @Inject constructor(
                 return@flow
             }
 
-            val remoteMovies = try {
-                movieApi.getTopRatedMovies(page = page)
-            } catch (e: Exception) {
-                e.printStackTrace()
+            val result = getTopRatedMoviesRemote(page, false)
+            if(result.isEmpty()){
                 emit(Resource.Error("Couldn't load data"))
                 emit(Resource.Loading(false))
                 return@flow
-            }
-
-            remoteMovies.results.let { movies ->
-                val moviesResult = movies.map {
-                    it.toMovie()
-                }
-                movies.forEachIndexed { index, movie ->
-                    val entity = movieDAO.getMovieWithId(movie.id)
-                    entity?.let {
-                        val category =
-                            if (it.category.contains(Category.TOP_RATED.name)) it.category
-                            else it.category + Category.TOP_RATED.name
-                        movieDAO.upsertMovie(
-                            movie.toMovieEntity(
-                                category = category,
-                                index = (remoteMovies.page - 1) * 20 + index,
-                                favorite = it.addedToFavorite,
-                                favoriteDate = it.addedInFavoriteDate
-                            )
-                        )
-                    } ?: movieDAO.upsertMovie(
-                        movie.toMovieEntity(
-                            category = Category.TOP_RATED.name,
-                            index = (remoteMovies.page - 1) * 20 + index
-                        )
-                    )
-                }
-
-                emit(Resource.Success(moviesResult))
+            } else {
+                emit(Resource.Success(result))
 
                 emit(Resource.Loading(false))
+                return@flow
             }
         }
     }
@@ -238,6 +227,49 @@ class MovieRepositoryImp @Inject constructor(
         }
     }
 
+    override suspend fun getTrendingDayMoviesRemote(page: Int, isRefresh: Boolean): List<Movie> {
+        val remoteMovies = try {
+            movieApi.getTrendingMovie(page = page, timeWindow = "day")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return emptyList()
+        }
+
+        if(isRefresh){
+            movieDAO.deleteExistCategory(Category.TRENDING_DAY.name, "%${Category.TRENDING_DAY.name}%")
+        }
+
+        remoteMovies.results.let { movies ->
+            val moviesResult = movies.map {
+                it.toMovie()
+            }
+            movies.forEachIndexed { index, movie ->
+                val entity = movieDAO.getMovieWithId(movie.id)
+                entity?.let {
+                    val category =
+                        if (it.category.contains(Category.TRENDING_DAY.name)) it.category
+                        else it.category + Category.TRENDING_DAY.name
+                    movieDAO.upsertMovie(
+                        movie.toMovieEntity(
+                            category = category,
+                            index = it.categoryIndex,
+                            favorite = it.addedToFavorite,
+                            favoriteDate = it.addedInFavoriteDate,
+                            categoryAddedDate = LocalDateTime.now().toString()
+                        )
+                    )
+                } ?: movieDAO.upsertMovie(
+                    movie.toMovieEntity(
+                        category = Category.TRENDING_DAY.name,
+                        index = 10000,
+                        categoryAddedDate = LocalDateTime.now().toString()
+                    )
+                )
+            }
+            return moviesResult
+        }
+    }
+
     override suspend fun getTrendingDayMovies(
         page: Int,
         isRefresh: Boolean
@@ -246,44 +278,16 @@ class MovieRepositoryImp @Inject constructor(
             emit(Resource.Loading())
 
             if (isRefresh) {
-                val remoteMovies = try {
-                    movieApi.getTrendingMovie(page = page, timeWindow = "day")
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val result = getTrendingDayMoviesRemote(page, true)
+                if(result.isEmpty()){
                     emit(Resource.Error("Couldn't load data"))
                     emit(Resource.Loading(false))
                     return@flow
-                }
-
-                remoteMovies.results.let { movies ->
-                    val moviesResult = movies.map {
-                        it.toMovie()
-                    }
-                    movies.forEachIndexed { index, movie ->
-                        val entity = movieDAO.getMovieWithId(movie.id)
-                        entity?.let {
-                            val category =
-                                if (it.category.contains(Category.TRENDING_DAY.name)) it.category
-                                else it.category + Category.TRENDING_DAY.name
-                            movieDAO.upsertMovie(
-                                movie.toMovieEntity(
-                                    category = category,
-                                    index = (remoteMovies.page - 1) * 20 + index,
-                                    favorite = it.addedToFavorite,
-                                    favoriteDate = it.addedInFavoriteDate
-                                )
-                            )
-                        } ?: movieDAO.upsertMovie(
-                            movie.toMovieEntity(
-                                category = Category.TRENDING_DAY.name,
-                                index = (remoteMovies.page - 1) * 20 + index
-                            )
-                        )
-                    }
-
-                    emit(Resource.Success(moviesResult))
+                } else {
+                    emit(Resource.Success(result))
 
                     emit(Resource.Loading(false))
+                    return@flow
                 }
             } else {
                 val localMovies =
@@ -299,45 +303,61 @@ class MovieRepositoryImp @Inject constructor(
                     return@flow
                 }
 
-                val remoteMovies = try {
-                    movieApi.getTrendingMovie(page = page, timeWindow = "day")
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val result = getTrendingDayMoviesRemote(page, false)
+                if(result.isEmpty()){
                     emit(Resource.Error("Couldn't load data"))
                     emit(Resource.Loading(false))
                     return@flow
-                }
-
-                remoteMovies.results.let { movies ->
-                    val moviesResult = movies.map {
-                        it.toMovie()
-                    }
-                    movies.forEachIndexed { index, movie ->
-                        val entity = movieDAO.getMovieWithId(movie.id)
-                        entity?.let {
-                            val category =
-                                if (it.category.contains(Category.TRENDING_DAY.name)) it.category
-                                else it.category + Category.TRENDING_DAY.name
-                            movieDAO.upsertMovie(
-                                movie.toMovieEntity(
-                                    category = category,
-                                    index = (remoteMovies.page - 1) * 20 + index,
-                                    favorite = it.addedToFavorite,
-                                    favoriteDate = it.addedInFavoriteDate
-                                )
-                            )
-                        } ?: movieDAO.upsertMovie(
-                            movie.toMovieEntity(
-                                category = Category.TRENDING_DAY.name,
-                                index = (remoteMovies.page - 1) * 20 + index
-                            )
-                        )
-                    }
-                    emit(Resource.Success(moviesResult))
+                } else {
+                    emit(Resource.Success(result))
 
                     emit(Resource.Loading(false))
+                    return@flow
                 }
             }
+        }
+    }
+
+    override suspend fun getTrendingWeekMoviesRemote(page: Int, isRefresh: Boolean): List<Movie> {
+        val remoteMovies = try {
+            movieApi.getTrendingMovie(page = page, timeWindow = "week")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return emptyList()
+        }
+        if(isRefresh){
+            movieDAO.deleteExistCategory(Category.TRENDING_WEEK.name, "%${Category.TRENDING_WEEK.name}%")
+        }
+
+        remoteMovies.results.let { movies ->
+            val moviesResult = movies.map {
+                it.toMovie()
+            }
+            movies.forEachIndexed { index, movie ->
+                val entity = movieDAO.getMovieWithId(movie.id)
+                entity?.let {
+                    val category =
+                        if (it.category.contains(Category.TRENDING_WEEK.name)) it.category
+                        else it.category + Category.TRENDING_WEEK.name
+                    movieDAO.upsertMovie(
+                        movie.toMovieEntity(
+                            category = category,
+                            index = (remoteMovies.page - 1) * 20 + index,
+                            favorite = it.addedToFavorite,
+                            favoriteDate = it.addedInFavoriteDate,
+                            categoryAddedDate = it.categoryDateAdded
+                        )
+                    )
+                } ?: movieDAO.upsertMovie(
+                    movie.toMovieEntity(
+                        category = Category.TRENDING_WEEK.name,
+                        index = (remoteMovies.page - 1) * 20 + index,
+                        categoryAddedDate = "empty"
+                    )
+                )
+            }
+
+            return moviesResult
         }
     }
 
@@ -350,44 +370,15 @@ class MovieRepositoryImp @Inject constructor(
             emit(Resource.Loading())
 
             if (isRefresh || shouldCallNetwork) {
-                val remoteMovies = try {
-                    movieApi.getTrendingMovie(page = page, timeWindow = "week")
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val result = getTrendingWeekMoviesRemote(page, true)
+                if(result.isEmpty()){
                     emit(Resource.Error("Couldn't load data"))
                     emit(Resource.Loading(false))
                     return@flow
-                }
-
-                remoteMovies.results.let { movies ->
-                    val moviesResult = movies.map {
-                        it.toMovie()
-                    }
-                    movies.forEachIndexed { index, movie ->
-                        val entity = movieDAO.getMovieWithId(movie.id)
-                        entity?.let {
-                            val category =
-                                if (it.category.contains(Category.TRENDING_WEEK.name)) it.category
-                                else it.category + Category.TRENDING_WEEK.name
-                            movieDAO.upsertMovie(
-                                movie.toMovieEntity(
-                                    category = category,
-                                    index = (remoteMovies.page - 1) * 20 + index,
-                                    favorite = it.addedToFavorite,
-                                    favoriteDate = it.addedInFavoriteDate
-                                )
-                            )
-                        } ?: movieDAO.upsertMovie(
-                            movie.toMovieEntity(
-                                category = Category.TRENDING_WEEK.name,
-                                index = (remoteMovies.page - 1) * 20 + index
-                            )
-                        )
-                    }
-
-                    emit(Resource.Success(moviesResult))
-
+                } else {
+                    emit(Resource.Success(result))
                     emit(Resource.Loading(false))
+                    return@flow
                 }
             } else {
 
@@ -405,44 +396,15 @@ class MovieRepositoryImp @Inject constructor(
                     return@flow
                 }
 
-                val remoteMovies = try {
-                    movieApi.getTrendingMovie(page = page, timeWindow = "week")
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val result = getTrendingWeekMoviesRemote(page, false)
+                if(result.isEmpty()){
                     emit(Resource.Error("Couldn't load data"))
                     emit(Resource.Loading(false))
                     return@flow
-                }
-
-                remoteMovies.results.let { movies ->
-                    val moviesResult = movies.map {
-                        it.toMovie()
-                    }
-                    movies.forEachIndexed { index, movie ->
-                        val entity = movieDAO.getMovieWithId(movie.id)
-                        entity?.let {
-                            val category =
-                                if (it.category.contains(Category.TRENDING_WEEK.name)) it.category
-                                else it.category + Category.TRENDING_WEEK.name
-                            movieDAO.upsertMovie(
-                                movie.toMovieEntity(
-                                    category = category,
-                                    index = (remoteMovies.page - 1) * 20 + index,
-                                    favorite = it.addedToFavorite,
-                                    favoriteDate = it.addedInFavoriteDate
-                                )
-                            )
-                        } ?: movieDAO.upsertMovie(
-                            movie.toMovieEntity(
-                                category = Category.TRENDING_WEEK.name,
-                                index = (remoteMovies.page - 1) * 20 + index
-                            )
-                        )
-                    }
-
-                    emit(Resource.Success(moviesResult))
-
+                } else {
+                    emit(Resource.Success(result))
                     emit(Resource.Loading(false))
+                    return@flow
                 }
             }
 
@@ -479,7 +441,6 @@ class MovieRepositoryImp @Inject constructor(
                     movieId
                 )
             } catch (e: Exception) {
-                println("movie screen: ${e.message}")
                 emit(Resource.Error("Couldn't load data"))
                 emit(Resource.Loading(false))
                 return@flow
@@ -497,9 +458,10 @@ class MovieRepositoryImp @Inject constructor(
                                 movieDAO.upsertMovie(
                                     movieDTO.toMovieEntity(
                                         category = category,
-                                        index = -1,
+                                        index = it.categoryIndex,
                                         favorite = it.addedToFavorite,
-                                        favoriteDate = it.addedInFavoriteDate
+                                        favoriteDate = it.addedInFavoriteDate,
+                                        categoryAddedDate = it.categoryDateAdded
                                     )
                                 )
                             } ?: movieDAO.upsertMovie(
@@ -520,9 +482,10 @@ class MovieRepositoryImp @Inject constructor(
                     movieDAO.upsertMovie(
                         movie.toMovieEntity(
                             category = category,
-                            index = -1,
+                            index = it.categoryIndex,
                             favorite = it.addedToFavorite,
-                            favoriteDate = it.addedInFavoriteDate
+                            favoriteDate = it.addedInFavoriteDate,
+                            categoryAddedDate = it.categoryDateAdded
                         )
                     )
                 } ?: movieDAO.upsertMovie(
@@ -682,15 +645,17 @@ class MovieRepositoryImp @Inject constructor(
                         movieDAO.upsertMovie(
                             movieDTO.toMovieEntity(
                                 category = category,
-                                index = -1,
+                                index = it.categoryIndex,
                                 favorite = it.addedToFavorite,
-                                favoriteDate = it.addedInFavoriteDate
+                                favoriteDate = it.addedInFavoriteDate,
+                                categoryAddedDate = it.categoryDateAdded
                             )
                         )
                     } ?: movieDAO.upsertMovie(
                         movieDTO.toMovieEntity(
                             category = Category.MOVIE.name,
-                            index = -1
+                            index = 10000,
+                            categoryAddedDate = "empty"
                         )
                     )
                 }
