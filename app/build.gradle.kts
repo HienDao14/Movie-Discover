@@ -125,4 +125,14 @@ dependencies {
 
     //Collapsing Toolbar
     implementation(libs.onebone.toolbar)
+
+    implementation(libs.androidx.constrain)
+
+    //Work Manager
+    implementation(libs.androidx.work)
+    implementation(libs.androidx.hilt.work)
+
+    //WebView
+    implementation(libs.webview.kevinnzou)
+
 }

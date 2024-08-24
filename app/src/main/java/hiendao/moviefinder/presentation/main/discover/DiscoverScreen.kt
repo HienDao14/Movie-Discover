@@ -1,28 +1,59 @@
 package hiendao.moviefinder.presentation.main.discover
 
+import android.graphics.Paint.Align
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarData
+import androidx.compose.material3.SnackbarDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +62,10 @@ import hiendao.moviefinder.presentation.state.MainUIState
 import hiendao.moviefinder.presentation.uiEvent.MainEvent
 import hiendao.moviefinder.util.NavRoute
 import hiendao.moviefinder.util.shared_components.CustomImage
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverScreen(
     modifier: Modifier = Modifier,
@@ -78,6 +112,26 @@ fun DiscoverScreen(
         mutableIntStateOf(-1)
     }
 
+    val refreshScope = rememberCoroutineScope()
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    fun refresh() = refreshScope.launch {
+        isRefreshing = true
+        //function refresh
+        onEvent(
+            MainEvent.StartDiscover(
+                type = textForType.value,
+                sortBy = catalogQuery.value,
+                voteCount = 1000f,
+                withGenres = if (genresQuery.intValue == -1) null else genresQuery.intValue.toString()
+            )
+        )
+        delay(3000)
+        isRefreshing = false
+    }
+
+    val refreshState = rememberPullToRefreshState()
+
     LaunchedEffect(true) {
         onEvent(
             MainEvent.StartDiscover(
@@ -122,7 +176,6 @@ fun DiscoverScreen(
                     }
 
                     //Call api
-                    println("Call api info: ${catalogQuery.value} and ${genresQuery.intValue}")
                     onEvent(
                         MainEvent.StartDiscover(
                             type = textForType.value,
@@ -142,114 +195,170 @@ fun DiscoverScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 100.dp)
+            .fillMaxSize()
+            .nestedScroll(refreshState.nestedScrollConnection)
     ) {
-
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(top = 100.dp)
+
         ) {
 
             Row(
-                modifier = Modifier.clickable {
-                    showDialog.value = true
-                    typeForDialog.value = "Type"
-                },
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Dropdown Icon"
-                )
-                Text(text = textForType.value, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            }
 
-            Row(
-                modifier = Modifier.clickable {
-                    showDialog.value = true
-                    typeForDialog.value = "Catalog"
-                },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Dropdown Icon"
-                )
-                Text(
-                    text = textForCatalog.value,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp
-                )
-            }
-
-            Row(
-                modifier = Modifier.clickable {
-                    showDialog.value = true
-                    typeForDialog.value = "Genres"
-                },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Dropdown Icon"
-                )
-                Text(text = textForGenres.value, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            }
-        }
-        if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(50.dp)
-                )
-            }
-        }
-        if (!uiState.errorMsg.isNullOrEmpty()) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Text(
-                    text = "Some error happened",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.align(
-                        Alignment.Center
+                Row(
+                    modifier = Modifier.clickable {
+                        showDialog.value = true
+                        typeForDialog.value = "Type"
+                    },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Dropdown Icon"
                     )
-                )
+                    Text(
+                        text = textForType.value,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.clickable {
+                        showDialog.value = true
+                        typeForDialog.value = "Catalog"
+                    },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Dropdown Icon"
+                    )
+                    Text(
+                        text = textForCatalog.value,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.clickable {
+                        showDialog.value = true
+                        typeForDialog.value = "Genres"
+                    },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Dropdown Icon"
+                    )
+                    Text(
+                        text = textForGenres.value,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp
+                    )
+                }
             }
-        }
 
-        val listDiscoverMedia = uiState.discoverMedia
-
-        if (listDiscoverMedia.isNotEmpty()) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(listDiscoverMedia.size) { index ->
-                    val media = listDiscoverMedia[index]
-                    CustomImage(imageUrl = media.posterPath, width = 100.dp, height = 180.dp) {
-                        if (textForType.value == "Movie") {
-                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${media.id}")
-                        } else {
-                            navHostController.navigate("${NavRoute.DETAIL_SCREEN}?seriesId=${media.id}")
-                        }
+            if (uiState.isLoading) {
+                Snackbar(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .size(height = 50.dp, width = 200.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Row(
+                        modifier = Modifier,
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(text = "Loading...")
                     }
+                }
+            }
 
-                    if (index >= listDiscoverMedia.size - 1 && !uiState.isLoading) {
-                        if (textForType.value == "Movie") {
-                            onEvent(MainEvent.OnPaginate("Discover"))
-                        } else {
-                            onEvent(MainEvent.OnPaginate("DiscoverTvSeries"))
+            if (!uiState.errorMsg.isNullOrEmpty()) {
+                Snackbar(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .size(height = 50.dp, width = 200.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Row(
+                        modifier = Modifier,
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(text = "Some error occur!!! Pull to refresh", fontSize = 13.sp)
+                    }
+                }
+            }
+
+            val listDiscoverMedia = uiState.discoverMedia
+
+            if (listDiscoverMedia.isNotEmpty()) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(listDiscoverMedia.size, key = {
+                        it
+                    }) { index ->
+                        val media = listDiscoverMedia[index]
+                        CustomImage(imageUrl = media.posterPath, width = 100.dp, height = 180.dp) {
+                            if (textForType.value == "Movie") {
+                                navHostController.navigate("${NavRoute.DETAIL_SCREEN}?movieId=${media.id}")
+                            } else {
+                                navHostController.navigate("${NavRoute.DETAIL_SCREEN}?seriesId=${media.id}")
+                            }
+                        }
+
+                        if (index >= listDiscoverMedia.size - 1 && !uiState.isLoading) {
+                            if (textForType.value == "Movie") {
+                                onEvent(MainEvent.OnPaginate("Discover"))
+                            } else {
+                                onEvent(MainEvent.OnPaginate("DiscoverTvSeries"))
+                            }
                         }
                     }
                 }
             }
         }
+
+        if (refreshState.isRefreshing) {
+            LaunchedEffect(true) {
+                refresh()
+            }
+        }
+
+        LaunchedEffect(isRefreshing) {
+            if (isRefreshing) {
+                refreshState.startRefresh()
+            } else {
+                refreshState.endRefresh()
+            }
+        }
+
+        PullToRefreshContainer(state = refreshState, modifier = Modifier.align(Alignment.TopCenter))
     }
+
+
 }

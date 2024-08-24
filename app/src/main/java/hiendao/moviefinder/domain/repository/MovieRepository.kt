@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.Flow
 interface MovieRepository {
     suspend fun getMovieDetail(movieId: Int): Flow<Resource<Movie>>
 
+    suspend fun getTopRatedMoviesRemote(
+        page: Int = 1, isRefresh: Boolean = false
+    ): List<Movie>
+
     suspend fun getTopRatedMovies(
         page: Int = 1,
         isRefresh: Boolean = false,
@@ -26,11 +30,15 @@ interface MovieRepository {
         isRefresh: Boolean = false
     ): Flow<Resource<List<Movie>>>
 
+    suspend fun getTrendingDayMoviesRemote(page: Int = 1, isRefresh: Boolean = false): List<Movie>
+
     suspend fun getTrendingWeekMovies(
         page: Int = 1,
         isRefresh: Boolean = false,
         shouldCallNetwork: Boolean = false
     ): Flow<Resource<List<Movie>>>
+
+    suspend fun getTrendingWeekMoviesRemote(page: Int = 1, isRefresh: Boolean = false): List<Movie>
 
     suspend fun getCollection(collectionId: Int): Flow<Resource<List<Media>>>
 

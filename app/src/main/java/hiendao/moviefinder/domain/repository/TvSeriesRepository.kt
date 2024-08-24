@@ -7,13 +7,15 @@ import kotlinx.coroutines.flow.Flow
 
 interface TvSeriesRepository {
 
+    suspend fun getPopularTvSeriesRemote(page: Int = 1): List<Media>
+
     suspend fun getPopularTvSeries(
         page: Int = 1,
         isRefresh: Boolean = false,
         shouldCallNetwork: Boolean = false
     ): Flow<Resource<List<Media>>>
 
-    suspend fun getTrendingDayTvSeries(): Flow<Resource<List<TvSeries>>>
+    suspend fun getTopRatedTvSeriesRemote(page: Int = 1): List<Media>
 
     suspend fun getTopRatedTvSeries(
         page: Int = 1,

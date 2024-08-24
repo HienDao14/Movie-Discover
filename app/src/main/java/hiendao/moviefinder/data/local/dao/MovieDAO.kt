@@ -27,8 +27,17 @@ interface MovieDAO {
 
 //    SELECT * FROM TableName ORDER BY id OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;
 //    SELECT * FROM movie WHERE category = :category ORDER BY popularity DESC
-    @Query("SELECT * FROM movie WHERE category LIKE :category ORDER BY popularity DESC LIMIT 20 OFFSET :number ")
+//    update movie set category = replace (category, "TRENDING_DAY", "")  where category like "%TRENDING_DAY%"
+    @Query("SELECT * FROM movie " +
+            "WHERE category LIKE :category " +
+            "ORDER BY CASE " +
+            "WHEN :category = \"%TRENDING_DAY%\" THEN categoryDateAdded  " +
+            "WHEN :category = \"%TRENDING_WEEK%\" THEN categoryIndex ELSE popularity END ASC " +
+            "LIMIT 20 OFFSET :number ")
     fun loadCategoryMovies(category: String, number: Int): List<MovieEntity>
+
+    @Query("update movie set category = replace (category, :category, \"\"), categoryIndex = 10000, categoryDateAdded = \"empty\"  where category like :categoryCondition")
+    fun deleteExistCategory(category: String, categoryCondition: String)
 
     @Query("SELECT * FROM movie WHERE id = :movieId")
     fun getMovieWithId(movieId: Int): MovieEntity?

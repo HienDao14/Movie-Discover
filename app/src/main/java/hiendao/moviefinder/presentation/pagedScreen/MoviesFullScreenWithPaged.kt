@@ -1,5 +1,6 @@
 package hiendao.moviefinder.presentation.pagedScreen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,13 +15,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.outlined.FilterAlt
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
@@ -43,9 +47,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import hiendao.moviefinder.data.mapper.toListMedia
 import hiendao.moviefinder.presentation.pagedScreen.common.MediaItemColumnScreen
@@ -118,11 +124,52 @@ fun MoviesFullScreenWithPaged(
                 .padding(it)
                 .nestedScroll(refreshState.nestedScrollConnection)
         ){
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
+                if (uiState.isLoading) {
+                    Snackbar(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .size(height = 50.dp, width = 200.dp)
+                            .align(Alignment.CenterHorizontally)
+                    ) {
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Loading...")
+                        }
+                    }
+                }
 
+                if (!uiState.errorMsg.isNullOrEmpty()) {
+                    Snackbar(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .size(height = 50.dp, width = 200.dp)
+                            .align(Alignment.CenterHorizontally)
+                    ) {
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.Info, contentDescription = null)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Some error occur!!! Pull to refresh", fontSize = 13.sp)
+                        }
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
@@ -171,7 +218,9 @@ fun MoviesFullScreenWithPaged(
                                 onClick = {
                                     if (filter.value != FilterType.TRENDING_WEEK) {
                                         filter.value = FilterType.TRENDING_WEEK
-                                        onEvent(MainEvent.StartLoad(filter.value.name))
+                                        if(uiState.trendingWeekMovies.isEmpty()){
+                                            onEvent(MainEvent.StartLoad(filter.value.name))
+                                        }
                                     }
                                     filterShow = false
                                 },
@@ -195,7 +244,9 @@ fun MoviesFullScreenWithPaged(
                                 onClick = {
                                     if (filter.value != FilterType.TRENDING_DAY) {
                                         filter.value = FilterType.TRENDING_DAY
-                                        onEvent(MainEvent.StartLoad(filter.value.name))
+                                        if(uiState.trendingDayMovies.isEmpty()){
+                                            onEvent(MainEvent.StartLoad(filter.value.name))
+                                        }
                                     }
                                     filterShow = false
                                 },
@@ -219,14 +270,7 @@ fun MoviesFullScreenWithPaged(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Box(modifier = modifier.fillMaxWidth()) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(50.dp),
-                            color = Color.White
-                        )
-                    }
+
                     val listMedia =
                         if (filter.value == FilterType.TRENDING_DAY) uiState.trendingDayMovies.toListMedia() else uiState.trendingWeekMovies.toListMedia()
                     if (listMedia.isNotEmpty()) {

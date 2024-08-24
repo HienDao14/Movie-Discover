@@ -87,7 +87,7 @@ fun HomeScreen(
                         //Popular Movies
                         AutoSwipeSection(
                             sectionType = "Movies - Top Rated",
-                            listMedia = uiState.popularMovies.toListMedia(),
+                            listMedia = uiState.topRatedMovies.toListMedia(),
                             navHostController = navHostController
                         )
 

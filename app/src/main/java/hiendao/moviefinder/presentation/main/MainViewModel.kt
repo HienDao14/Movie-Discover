@@ -32,15 +32,34 @@ class MainViewModel @Inject constructor(
     fun onEvent(event: MainEvent) {
         when (event) {
             is MainEvent.Refresh -> {
-                restartState()
                 if(event.type == "MoviePagedScreen"){
+                    _mainUIState.update {
+                        it.copy(
+                            trendingWeekMovies = emptyList(),
+                            trendingDayMovies = emptyList(),
+                            moviePage = 1
+                        )
+                    }
                     getTrendingWeekMovies(isRefresh = true)
                     getTrendingDayMovies(isRefresh = true)
                 } else if(event.type == "TvSeriesPopular") {
+                    _mainUIState.update {
+                        it.copy(
+                            popularTvSeries = emptyList(),
+                            moviePage = 1
+                        )
+                    }
                     getPopularTvSeries(isRefresh = true)
                 } else if(event.type == "TvSeriesTopRated"){
+                    _mainUIState.update {
+                        it.copy(
+                            topRatedTvSeries = emptyList(),
+                            moviePage = 1
+                        )
+                    }
                     getTopRatedTvSeries(isRefresh = true)
                 } else {
+                    restartState()
                     load(isRefresh = true)
                 }
             }
@@ -77,7 +96,7 @@ class MainViewModel @Inject constructor(
             is MainEvent.StartLoad -> {
                 _mainUIState.update {
                     it.copy(
-                        moviePage = 0
+                        moviePage = 1
                     )
                 }
                 if (event.type == FilterType.TRENDING_DAY.name) {
@@ -115,14 +134,12 @@ class MainViewModel @Inject constructor(
             it.copy(
                 isLoading = false,
                 isRefresh = false,
-                popularMovies = emptyList(),
+                topRatedMovies = emptyList(),
                 trendingDayMovies = emptyList(),
                 trendingWeekMovies = emptyList(),
-                topRatedMovies = emptyList(),
                 moviePage = 1,
                 popularTvSeries = emptyList(),
-                callApiInNewDate = false,
-                didCheckDate = false
+                topRatedTvSeries = emptyList(),
             )
         }
     }
@@ -132,53 +149,41 @@ class MainViewModel @Inject constructor(
             withContext(Dispatchers.IO){
                 getTopRatedMovies(isRefresh)
                 getTrendingWeekMovies(isRefresh)
-                getPopularTvSeries()
+                getTrendingDayMovies(isRefresh)
+                getPopularTvSeries(isRefresh)
                 getTopRatedTvSeries(isRefresh)
-                if(_mainUIState.value.callApiInNewDate){
-                    _mainUIState.update {
-                        it.copy(
-                            callApiInNewDate = false
-                        )
-                    }
-                }
             }
         }
     }
 
+    //reload -> update category index -> delete all category of previous
     init {
+        var reload = false
         val date = LocalDate.now().dayOfYear
         if (date == 1) {
-            _mainUIState.update {
-                it.copy(
-                    callApiInNewDate = true
-                )
-            }
+            reload = true
             prefs.edit().putInt("Date", date).apply()
         } else {
             try {
                 val dateBefore = prefs.getInt("Date", -1)
                 println("Date : $date and $dateBefore")
                 if (dateBefore == -1 || date > dateBefore) {
-                    _mainUIState.update {
-                        it.copy(
-                            callApiInNewDate = true
-                        )
-                    }
+                    reload = true
                     prefs.edit().putInt("Date", date).apply()
                 }
             } catch (e: Exception) {
                 prefs.edit().putInt("Date", date).apply()
             }
         }
-        load()
+        println("Date : reload value: $reload")
+        load(reload)
     }
 
-    private fun getTopRatedMovies(isRefresh: Boolean = false) {
+    private fun  getTopRatedMovies(isRefresh: Boolean = false) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val page = _mainUIState.value.moviePage
-                val shouldCallNetwork = _mainUIState.value.callApiInNewDate
-                movieRepository.getTopRatedMovies(page, isRefresh, shouldCallNetwork)
+                movieRepository.getTopRatedMovies(page, isRefresh)
                     .collect { result ->
                         when (result) {
                             is Resource.Loading -> {
@@ -201,7 +206,8 @@ class MainViewModel @Inject constructor(
                                 result.data?.let { movies ->
                                     _mainUIState.update {
                                         it.copy(
-                                            popularMovies = movies.sortedByDescending { it.popularity }
+                                            topRatedMovies = movies.sortedByDescending { it.popularity },
+                                            errorMsg = null
                                         )
                                     }
                                 }
@@ -216,7 +222,6 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val page = _mainUIState.value.moviePage
-                val shouldCallNetwork = _mainUIState.value.callApiInNewDate
                 movieRepository.getTrendingDayMovies(page = page, isRefresh = isRefresh)
                     .collect { result ->
                         when (result) {
@@ -240,7 +245,8 @@ class MainViewModel @Inject constructor(
                                 result.data?.let { movies ->
                                     _mainUIState.update {
                                         it.copy(
-                                            trendingDayMovies = it.trendingDayMovies + movies.sortedByDescending { it.popularity }
+                                            trendingDayMovies = it.trendingDayMovies + movies,
+                                            errorMsg = null
                                         )
                                     }
                                 }
@@ -255,11 +261,9 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val page = _mainUIState.value.moviePage
-                val shouldCallNetwork = _mainUIState.value.callApiInNewDate
                 movieRepository.getTrendingWeekMovies(
                     page = page,
-                    isRefresh = isRefresh,
-                    shouldCallNetwork = shouldCallNetwork
+                    isRefresh = isRefresh
                 ).collect { result ->
                     when (result) {
                         is Resource.Loading -> {
@@ -282,7 +286,8 @@ class MainViewModel @Inject constructor(
                             result.data?.let { movies ->
                                 _mainUIState.update {
                                     it.copy(
-                                        trendingWeekMovies = it.trendingWeekMovies + movies.sortedByDescending { it.popularity }
+                                        trendingWeekMovies = it.trendingWeekMovies + movies,
+                                        errorMsg = null
                                     )
                                 }
                             }
@@ -332,7 +337,8 @@ class MainViewModel @Inject constructor(
                             result.data?.let { movies ->
                                 _mainUIState.update {
                                     it.copy(
-                                        discoverMedia = it.discoverMedia + movies
+                                        discoverMedia = it.discoverMedia + movies,
+                                        errorMsg = null
                                     )
                                 }
                             }
@@ -380,7 +386,8 @@ class MainViewModel @Inject constructor(
                             result.data?.let { listTvSeries ->
                                 _mainUIState.update {
                                     it.copy(
-                                        discoverMedia = it.discoverMedia + listTvSeries
+                                        discoverMedia = it.discoverMedia + listTvSeries,
+                                        errorMsg = null
                                     )
                                 }
                             }
@@ -402,7 +409,8 @@ class MainViewModel @Inject constructor(
                             result.data?.let {list ->
                                 _mainUIState.update {
                                     it.copy(
-                                        popularTvSeries = it.popularTvSeries + list
+                                        popularTvSeries = it.popularTvSeries + list,
+                                        errorMsg = null
                                     )
                                 }
                             }
@@ -437,7 +445,8 @@ class MainViewModel @Inject constructor(
                             result.data?.let {list ->
                                 _mainUIState.update {
                                     it.copy(
-                                        topRatedTvSeries = it.topRatedTvSeries + list
+                                        topRatedTvSeries = it.topRatedTvSeries + list,
+                                        errorMsg = null
                                     )
                                 }
                             }

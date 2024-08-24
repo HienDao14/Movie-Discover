@@ -209,15 +209,17 @@ class CommonRepositoryImp @Inject constructor(
                                 movieDAO.upsertMovie(
                                     movieDTO.toMovieEntity(
                                         category = category,
-                                        index = -1,
+                                        index = it.categoryIndex,
                                         favorite = it.addedToFavorite,
-                                        favoriteDate = it.addedInFavoriteDate
+                                        favoriteDate = it.addedInFavoriteDate,
+                                        categoryAddedDate = it.categoryDateAdded
                                     )
                                 )
                             } ?: movieDAO.upsertMovie(
                                 movieDTO.toMovieEntity(
                                     category = Category.MOVIE.name,
-                                    index = -1
+                                    index = 10000,
+                                    categoryAddedDate = "empty"
                                 )
                             )
                         }

@@ -30,8 +30,10 @@ class FavoriteViewModel @Inject constructor(
                     it.copy(
                         movieFavorite = emptyList(),
                         creditFavorite = emptyList(),
+                        seriesFavorite = emptyList(),
                         moviePage = 1,
-                        creditPage = 1
+                        creditPage = 1,
+                        seriesPage = 1
                     )
                 }
                 getFavoriteMovies()

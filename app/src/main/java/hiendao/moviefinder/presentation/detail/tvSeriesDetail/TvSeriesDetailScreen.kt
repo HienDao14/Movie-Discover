@@ -63,6 +63,7 @@ import hiendao.moviefinder.presentation.detail.imageSection.ImageSection
 import hiendao.moviefinder.presentation.detail.recommendationSection.RecommendationSection
 import hiendao.moviefinder.presentation.state.SeriesDetailState
 import hiendao.moviefinder.presentation.detail.tvSeriesDetail.overview.TvSeriesOverviewSection
+import hiendao.moviefinder.presentation.detail.videoSection.VideoSection
 import hiendao.moviefinder.presentation.uiEvent.SeriesDetailEvent
 import hiendao.moviefinder.util.Constant
 import hiendao.moviefinder.util.NavRoute
@@ -191,6 +192,9 @@ fun TvSeriesDetailScreen(
             },
             navigateToCredit = {creditId ->
                 navHostController.navigate("${NavRoute.CREDIT_SCREEN}?creditId=${creditId}")
+            },
+            onHomepageClick = {url ->
+                navHostController.navigate("${NavRoute.WEB_VIEW}?url=$url")
             }
         )
 
@@ -234,7 +238,8 @@ fun TvSeriesDetailSection(
     detailState: SeriesDetailState,
     changeFavoriteClick: (Int, String, Int) -> Unit,
     showImage: (List<String>, String) -> Unit,
-    navigateToCredit: (Int) -> Unit
+    navigateToCredit: (Int) -> Unit,
+    onHomepageClick: (String) -> Unit
 ){
 
     val pagerState = rememberPagerState(
@@ -321,7 +326,10 @@ fun TvSeriesDetailSection(
                 0 -> {
                     TvSeriesOverviewSection(
                         modifier = Modifier.fillMaxWidth(),
-                        series = series
+                        series = series,
+                        navigate = {url ->
+                            onHomepageClick(url)
+                        }
                     )
                 }
 
@@ -347,7 +355,11 @@ fun TvSeriesDetailSection(
                     }
                 }
 
-                4 -> {}
+                4 -> {
+                    VideoSection(keys = series.videos) {
+                        
+                    }
+                }
             }
         }
     }
@@ -361,7 +373,6 @@ fun TvSeriesInfoSection(
     changeFavoriteClick: (Int, String, Int) -> Unit
 ) {
     val genres = getGenresFromCode(series.genres).joinToString(" - ") { it.name }
-
 
     val addedToFavorite = rememberSaveable {
         mutableStateOf(series.addedToFavorite)

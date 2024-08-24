@@ -17,7 +17,7 @@ fun makeFullUrl(path: String): String {
     return "${BASE_IMAGE_URL}${path}"
 }
 
-fun MovieDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = ""): MovieEntity {
+fun MovieDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = "", categoryAddedDate: String = ""): MovieEntity {
     return MovieEntity(
         id = id,
         adult = adult,
@@ -49,7 +49,8 @@ fun MovieDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favo
         collectionId = -1,
         credits = "",
         addedToFavorite = favorite,
-        addedInFavoriteDate = favoriteDate
+        addedInFavoriteDate = favoriteDate,
+        categoryDateAdded = categoryAddedDate
     )
 }
 
@@ -107,7 +108,7 @@ fun MovieEntity.toMedia(): Media{
     )
 }
 
-fun MovieDetailDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = ""): MovieEntity {
+fun MovieDetailDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0, favoriteDate: String = "",  categoryAddedDate : String = ""): MovieEntity {
     return MovieEntity(
         id = id,
         adult = adult,
@@ -136,6 +137,7 @@ fun MovieDetailDTO.toMovieEntity(category: String, index: Int, favorite: Int = 0
                 + (images?.backdrops?.joinToString(",") { it.file_path } ?: ""),
         category = category,
         categoryIndex = index,
+        categoryDateAdded = categoryAddedDate,
         videos = videos.results.joinToString(",") { it.key },
         collectionId = belongs_to_collection?.id ?: -1,
         credits = "",
